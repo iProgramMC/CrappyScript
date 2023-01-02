@@ -1,3 +1,17 @@
+                      CrappyScript - A really crappy scripting language
+
+    Now, why am I calling this crappy? It's really simple - because it's REALLY quick & dirty
+in how it's designed. It only works on strings (for now?), and it's designed as I go. This
+language *MIGHT* appear in NanoShell, as the primary shell, however I'm not too sure about it.
+
+This language is quite simple to parse since it does not feature infix operations (so if there
+was a hypothetical arithmetic addition operation, it would be a built-in function instead of
+an in-fix operator (so `add("2", "5")` instead of `"2" + "5"`).
+
+         This code is licensed under the MIT license. Check LICENSE for details.
+
+
+
 Important notes about this language:
 
 * The language only works with strings. Why? Well, this might be used as NanoShell's
