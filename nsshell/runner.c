@@ -10,12 +10,23 @@ NORETURN void RunnerOnError(int error)
 	longjmp(g_errorJumpBuffer, error);
 }
 
+typedef struct
+{
+	Function* m_pFunction;
+	char* m_args[C_MAX_ARGS];
+	int m_nargs;
+}
+CallStackFrame;
+
+static CallStackFrame g_callStack[C_MAX_STACK];
+static int g_callStackPointer;
+
 // The runner is very simple - it looks through the statements and does decisions based on them.
 
 // This could be optimized. By a lot.
 Function* g_functionsList;
 
-char* RunStatement(Statement* pStatement, int argc, char** argv);
+char* RunStatement(Statement* pStatement);
 
 void RunnerFreeFunction(Function * pFunc)
 {
@@ -85,10 +96,11 @@ void RunnerAddFunctionPtr(CallableFunPtr fp, const char* fname, int nargs, bool 
 	pFunc->m_name     = fname;
 	pFunc->m_bReturns = returns;
 	pFunc->m_nArgs    = nargs;
+	pFunc->m_args     = NULL; // this only applies to statement-functions
 	pFunc->m_pFunction = fp;
 }
 
-void RunnerAddFunctionStatement(Statement* statement, const char* fname, int nargs, bool returns)
+void RunnerAddFunctionStatement(Statement* statement, const char* fname, int nargs, char** args, bool returns)
 {
 	if (nargs >= C_MAX_ARGS)
 	{
@@ -107,6 +119,7 @@ void RunnerAddFunctionStatement(Statement* statement, const char* fname, int nar
 	pFunc->m_name = fname;
 	pFunc->m_bReturns = returns;
 	pFunc->m_nArgs = nargs;
+	pFunc->m_args = args;
 	pFunc->m_pStatement = statement;
 }
 
@@ -124,6 +137,7 @@ void RunnerAddFunctionVariable(Statement* statement, const char* fname)
 	pFunc->m_name = fname;
 	pFunc->m_bReturns = true;
 	pFunc->m_nArgs = 0;
+	pFunc->m_args = NULL; // this only applies to statement-functions
 	if (statement)
 	{
 		pFunc->m_pContents = RunStatement(statement, 0, NULL);
@@ -154,7 +168,7 @@ extern Statement* g_mainBlock;
 
 
 
-char* RunStatement(Statement* pStatement, int argc, char** argv)
+char* RunStatement(Statement* pStatement)
 {
 	// well, it depends on the type of statement
 	switch (pStatement->type)
@@ -167,7 +181,7 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 
 			for (size_t i = 0; i < pData->m_nstatements; i++)
 			{
-				char* returnValue = RunStatement(pData->m_statements[i], 0, NULL);
+				char* returnValue = RunStatement(pData->m_statements[i]);
 
 				// TempleOS style. If this statement was a simple string, just print it.
 				if (pData->m_statements[i]->type == STMT_STRING)
@@ -197,7 +211,7 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 				}
 			}
 
-			RunnerAddFunctionStatement(pData->m_statement, pData->m_name, pData->m_nargs, true);
+			RunnerAddFunctionStatement(pData->m_statement, pData->m_name, pData->m_nargs, pData->m_args, true);
 
 			break;
 		}
@@ -234,7 +248,7 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 			if (pPreExistingFunc->m_pContents)
 				MemFree(pPreExistingFunc->m_pContents);
 
-			pPreExistingFunc->m_pContents = RunStatement(pData->m_statement, 0, NULL);
+			pPreExistingFunc->m_pContents = RunStatement(pData->m_statement);
 
 			break;
 		}
@@ -246,10 +260,41 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 		{
 			StatementCmdData* pData = pStatement->m_cmd_data;
 
+			Function fakeFuncObject; // keep the fake on the stack despite that we only need it for argument searching
+
 			Function* pFunc = RunnerLookUpFunction(pData->m_name);
 			if (!pFunc)
 			{
-				RunnerOnError(ERROR_UNKNOWN_FUNCTION);
+				// Okay, well maybe this is an argument. Scan through all the arguments of this function
+				CallStackFrame* callStackFrame = &g_callStack[g_callStackPointer];
+				Function* pFunction = callStackFrame->m_pFunction;
+
+				if (pFunction)
+				{
+					for (size_t i = 0; i < pFunction->m_nArgs; i++)
+					{
+						if (strcmp(pFunction->m_args[i], pData->m_name) == 0)
+						{
+							// Found our match!! Let's make the fakeFuncObject point to the argument.
+							memset(&fakeFuncObject, 0, sizeof fakeFuncObject);
+
+							fakeFuncObject.m_args = NULL;
+							fakeFuncObject.m_nArgs = 0;
+							fakeFuncObject.m_bReturns = true;
+							fakeFuncObject.m_name = pData->m_name;
+							fakeFuncObject.m_pContents = callStackFrame->m_args[i];
+							fakeFuncObject.type = FUNCTION_VARIABLE;
+
+							pFunc = &fakeFuncObject;
+							break;
+						}
+					}
+				}
+
+				if (!pFunc)
+				{
+					RunnerOnError(ERROR_UNKNOWN_FUNCTION);
+				}
 			}
 
 			if (pFunc->type == FUNCTION_VARIABLE)
@@ -277,7 +322,7 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 
 			for (size_t i = 0; i < pData->m_nargs; i++)
 			{
-				args[i] = RunStatement(pData->m_args[i], 0, NULL);
+				args[i] = RunStatement(pData->m_args[i]);
 			}
 
 			char* returnValue = NULL;
@@ -291,7 +336,17 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 				}
 				case FUNCTION_STATEMENT:
 				{
-					returnValue = RunStatement(pFunc->m_pStatement, pFunc->m_nArgs, args);
+					// This is a statement function.
+
+					// Add a new value to the call stack
+					CallStackFrame* pItem = &g_callStack[g_callStackPointer + 1];
+					pItem->m_pFunction = pFunc;
+					memcpy(pItem->m_args, args, C_MAX_ARGS * sizeof(char*));
+
+					g_callStackPointer++;
+					returnValue = RunStatement(pFunc->m_pStatement);
+					g_callStackPointer--;
+
 					break;
 				}
 				default:
@@ -337,7 +392,10 @@ void RunnerGo()
 {
 	RunnerAddStandardFunctions();
 	
-	char* chr = RunStatement(g_mainBlock, 0, NULL);
+	g_callStackPointer = 0;
+	memset(&g_callStack[g_callStackPointer], 0, sizeof(CallStackFrame));
+
+	char* chr = RunStatement(g_mainBlock);
 
 	// If this happens to return anything, free it
 	if (chr)

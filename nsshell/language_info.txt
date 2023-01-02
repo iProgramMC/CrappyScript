@@ -39,3 +39,5 @@ Quirks of this language:
 * You can name a variable with just numbers, or even some symbols. This has the added benefit
   of somewhat supporting UTF-8 characters as identifier names (well, as long as the standard
   C functions will let me). So yes, you can name your "hello" function `こんにちわ`.
+
+* Global variables take over parameter names.

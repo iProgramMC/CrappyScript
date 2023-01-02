@@ -6,6 +6,13 @@ function test
 	# return "Test!"
 }
 
+function argumentTest(parm)
+{
+	echo(concat(concat("Argument test! And the argument passed in is \e[91m\"", parm), "\"\e[0m!"));
+}
+
+argumentTest("yoo");
+
 function testing
 {
 	# Yes you can do this.
@@ -46,7 +53,7 @@ test;
 
 echo(test());
 
-testing();
-testing();
+testing;
+testing;
 
 # A comment here.

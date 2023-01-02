@@ -4,6 +4,7 @@
 
 #define C_MAX_ARGS (64)
 #define C_MAX_BUILTIN_ARGS (8)
+#define C_MAX_STACK (1024)
 
 typedef enum
 {
@@ -28,6 +29,7 @@ struct Function
 	eFunctionType type;
 	const char* m_name;
 	int m_nArgs;
+	char** m_args;
 	bool m_bReturns;
 
 	union
