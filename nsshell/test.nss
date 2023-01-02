@@ -1,51 +1,24 @@
 
+let fortytwo = "42";
+
+var fortytwo2 = fortytwo;
+
+function fnname(arg1, arg2)
 {
-	{
-		printf("Hello, world!");
-	
-		if test(a,b,c) then {
-			test2(a,b,c);
-		}
-		
-		if condition then {
-			fuckyeah;
-		} else {
-			hellno;
-		}
-		
-		while yes do {
-			call(funny);
-		} finally {
-			haha();
-		}
-	
-		argcall;
-		
-		test3(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,aa,ab(ac,ad,ae,af(ag,ah,ai,aj),f,u,c,k(y,o,u)),crap);
-		
-		{
-			{
-			}
-			{
-			}
-			;;;;;;
-			{
-			}
-			;
-		}
-	}
+	printf("%s %s", arg1, arg2);
+	return("hello");
 }
 
+var nothing;
+
+fun second
 {
-	{
-		;
-		{
-			{
-			}
-			;
-		}
-	}
-	;
+	test();
 }
 
+var funny = fnname(nothing, "44");
+
+fnname(funny, "world");
+
+second;
 

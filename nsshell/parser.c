@@ -104,6 +104,40 @@ Statement* ParserSetupStringStatement()
 	return pStmt;
 }
 
+Statement* ParserSetupFunctionStatement()
+{
+	Statement* pStmt = calloc(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_FUNCTION;
+
+	pStmt->m_fun_data = calloc(1, sizeof(StatementFunData));
+	if (!pStmt->m_fun_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_fun_data->m_name      = "";
+	pStmt->m_fun_data->m_statement = NULL;
+	pStmt->m_fun_data->m_args      = NULL;
+	pStmt->m_fun_data->m_nargs     = 0;
+
+	return pStmt;
+}
+
+Statement* ParserSetupVariableStatement()
+{
+	Statement* pStmt = calloc(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_VARIABLE;
+
+	pStmt->m_var_data = calloc(1, sizeof(StatementFunData));
+	if (!pStmt->m_var_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_var_data->m_name      = "";
+	pStmt->m_var_data->m_statement = NULL;
+
+	return pStmt;
+}
+
 void ParserAddStmtToBlockStmt(Statement* pBlockStmt, Statement* pAddedStmt)
 {
 	if (pBlockStmt->type != STMT_BLOCK) ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
@@ -126,6 +160,18 @@ void ParserAddArgToCmdStmt(Statement* pCmdStmt, Statement* arg)
 
 	pCmdStmt->m_cmd_data->m_args = args;
 	pCmdStmt->m_cmd_data->m_args[pCmdStmt->m_cmd_data->m_nargs++] = arg;
+}
+
+void ParserAddArgToFunStmt(Statement* pFunStmt, char* arg)
+{
+	if (pFunStmt->type != STMT_FUNCTION) ParserOnError(ERROR_INTERNAL_NOT_A_FUNCTION_STMT);
+
+	// To the m_blk_data, add a statement.
+	char** args = (char**)realloc(pFunStmt->m_fun_data->m_args, (pFunStmt->m_fun_data->m_nargs + 1) * sizeof(char*));
+	if (!args) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pFunStmt->m_fun_data->m_args = args;
+	pFunStmt->m_fun_data->m_args[pFunStmt->m_fun_data->m_nargs++] = arg;
 }
 
 Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
@@ -170,13 +216,9 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 				else
 					return pCmdStmt;
 			}
+		}
 
-			return pCmdStmt;
-		}
-		else
-		{
-			return pCmdStmt;
-		}
+		return pCmdStmt;
 	}
 	else
 	{
@@ -221,6 +263,8 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 
 Statement* ParseCommandStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_COMMAND_STATEMENT);
+
 	Statement* pStmt = ParseCommandStatementInside(true);
 
 	Token* token = ConsumeToken();
@@ -232,6 +276,9 @@ Statement* ParseCommandStatement()
 
 Statement* ParseIfStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_IF_STATEMENT);
+	if (!IS(PeekToken(), TK_IF)) ParserOnError(ERROR_EXPECTED_IF_STATEMENT);
+
 	ConsumeToken();
 
 	Statement* pIfStmt = ParserSetupIfStatement();
@@ -266,6 +313,9 @@ Statement* ParseIfStatement()
 
 Statement* ParseWhileStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_WHILE_STATEMENT);
+	if (!IS(PeekToken(), TK_WHILE)) ParserOnError(ERROR_EXPECTED_WHILE_STATEMENT);
+
 	ConsumeToken();
 
 	Statement* pIfStmt = ParserSetupIfStatement();
@@ -301,6 +351,9 @@ Statement* ParseWhileStatement()
 
 Statement* ParseEmptyStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_EMPTY_STATEMENT);
+	if (!IS(PeekToken(), TK_SEMICOLON)) ParserOnError(ERROR_EXPECTED_SEMICOLON);
+
 	ConsumeToken();
 	
 	Statement* pStmt = calloc(1, sizeof(Statement));
@@ -317,6 +370,9 @@ Statement* ParseEmptyStatement()
 
 Statement* ParseStringStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
+	if (!IS(PeekToken(), TK_STRING)) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
+
 	Statement* pStmt = ParserSetupStringStatement();
 
 	if (!PeekToken())
@@ -329,8 +385,113 @@ Statement* ParseStringStatement()
 	return pStmt;
 }
 
+Statement* ParseFunctionStatement()
+{
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_FUNCTION_STATEMENT);
+	if (!IS(PeekToken(), TK_FUNCTION) && !IS(PeekToken(), TK_FUNCTION_SHORT)) ParserOnError(ERROR_EXPECTED_FUNCTION_STATEMENT);
+
+	ConsumeToken(); // consume the 'function' word
+
+	Token* token;
+
+	token = PeekToken();
+	if (!token) ParserOnError(ERROR_EXPECTED_FUNCTION_NAME);
+	if (!IS(token, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_FUNCTION_NAME);
+
+	Statement* pFunction = ParserSetupFunctionStatement();
+	pFunction->m_fun_data->m_name = token->m_data;
+
+	// Consume the name token.
+	ConsumeToken();
+
+	// Peek into the next token.
+	token = PeekToken();
+
+	// Check if this is the start of an argument list.
+	if (IS(token, TK_OPENPAREN))
+	{
+		ConsumeToken();
+
+		while (true)
+		{
+			token = PeekToken();
+
+			if (!token) ParserOnError(ERROR_UNTERMINATED_FUNCTION_DECL);
+			if (!IS(token, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_ARGUMENTS);
+
+			ParserAddArgToFunStmt(pFunction, token->m_data);
+
+			ConsumeToken();
+
+			// The next token should be a comma.
+			token = PeekToken();
+			if (!token) ParserOnError(ERROR_UNTERMINATED_FUNCTION_DECL);
+			if (!IS(token, TK_COMMA))
+			{
+				if (IS(token, TK_CLOSEPAREN))
+					break;
+
+				ParserOnError(ERROR_EXPECTED_COMMA);
+			}
+
+			ConsumeToken();
+		}
+
+		ConsumeToken();
+	}
+
+	// Now get the function body.
+	pFunction->m_fun_data->m_statement = ParseGenericStatement();
+
+	return pFunction;
+}
+
+Statement* ParseLetStatement()
+{
+	Token* tk = PeekToken();
+	if (!tk) ParserOnError(ERROR_EXPECTED_LET_STATEMENT);
+	if (!IS(tk, TK_LET) && !IS(tk, TK_VAR)) ParserOnError(ERROR_EXPECTED_LET_STATEMENT);
+
+	ConsumeToken();
+
+	tk = PeekToken();
+	if (!IS(tk, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_VARIABLE_NAME);
+
+	ConsumeToken();
+
+	Statement* pVarStmt = ParserSetupVariableStatement();
+
+	pVarStmt->m_var_data->m_name = tk->m_data;
+
+	// Check the next token. If it's an equals sign, that means afterwards there will be a new statement.
+	tk = PeekToken();
+
+	if (IS(tk, TK_EQUALS))
+	{
+		ConsumeToken();
+
+		// okay, now parse a statement
+		pVarStmt->m_var_data->m_statement = ParseGenericStatement();
+
+		// hack for now: If this is a STMT_COMMAND statement, it already ate the semicolon
+		if (pVarStmt->m_var_data->m_statement->type == STMT_COMMAND)
+			return pVarStmt;
+	}
+
+	// Ensure this declaration is finished off with a semicolon
+	tk = PeekToken();
+	if (!IS(tk, TK_SEMICOLON))
+	{
+		ParserOnError(ERROR_EXPECTED_SEMICOLON);
+	}
+
+	return pVarStmt;
+}
+
 Statement* ParseGenericStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_STATEMENT);
+
 	Token* tk = PeekToken();
 
 	Statement* pStmt = NULL;
@@ -345,6 +506,10 @@ Statement* ParseGenericStatement()
 		pStmt = ParseWhileStatement();
 	else if (IS(tk, TK_STRING))
 		pStmt = ParseStringStatement();
+	else if (IS(tk, TK_FUNCTION) || IS(tk, TK_FUNCTION_SHORT))
+		pStmt = ParseFunctionStatement();
+	else if (IS(tk, TK_LET) || IS(tk, TK_VAR))
+		pStmt = ParseLetStatement();
 	else
 		pStmt = ParseCommandStatement(false);
 
@@ -365,6 +530,9 @@ void ParseBlockStatementInside(Statement* pBlockStmt)
 
 Statement* ParseBlockStatement()
 {
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_BLOCK_STATEMENT);
+	if (!IS(PeekToken(), TK_OPENBLOCK)) ParserOnError(ERROR_EXPECTED_BLOCK_STATEMENT);
+
 	Statement* subBlockStmt = ParserSetupBlockStatement();
 
 	ConsumeToken();
@@ -395,6 +563,7 @@ static const char* const g_ts[] =
 	"STMT_IF",
 	"STMT_WHILE",
 	"STMT_STRING",
+	"STMT_FUNCTION",
 };
 
 const char* GetTypeString(eStatementType type)
@@ -457,6 +626,16 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 
 			PadLineTo(padding); LogMsg("False branch: ");
 			ParserDumpStatement(pStmt->m_if_data->m_false_part, padding + 4);
+		}
+		case STMT_FUNCTION:
+		{
+			LogMsgNoCr("  Name: %s Arg:", pStmt->m_fun_data->m_name);
+			for (int i = 0; i < pStmt->m_fun_data->m_nargs; i++)
+				LogMsgNoCr("%s%s", i == 0 ? "" : ",", pStmt->m_fun_data->m_args[i]);
+			LogMsg("");
+
+			PadLineTo(padding); LogMsg("Function body:");
+			ParserDumpStatement(pStmt->m_fun_data->m_statement, padding + 4);
 		}
 		default:
 		{

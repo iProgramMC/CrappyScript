@@ -8,7 +8,7 @@ extern FILE* g_file;
 //const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
 
 // note: this must match the order in the enum eToken from TK_SYMBOL_START
-const char* g_singleSymbolTokens = ";{}(),";
+const char* g_singleSymbolTokens = ";{}(),=";
 
 // note: this must match the exact order in the enum eToken from TK_KEYWORD_START
 const char* gKeywordKeys[] =
@@ -20,6 +20,10 @@ const char* gKeywordKeys[] =
 	"while",
 	"do",
 	"finally",
+	"function",
+	"fun",
+	"let",
+	"var",
 };
 
 Token** tokens = NULL;
@@ -89,6 +93,7 @@ void TokenAdd(int type, char* data)
 			case '(': pToken->m_type = TK_OPENPAREN;  break;
 			case ')': pToken->m_type = TK_CLOSEPAREN; break;
 			case ',': pToken->m_type = TK_COMMA;      break;
+			case '=': pToken->m_type = TK_EQUALS;     break;
 			default: TokenOnError(ERROR_INTERNAL_UNKNOWN_SYMBOL_TOKEN);
 		}
 
