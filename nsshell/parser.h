@@ -27,9 +27,9 @@ StatementIfData;
 
 typedef struct
 {
-	// This is a regular old command.
-	char** tokens;
-	size_t ntokens;
+	char* m_name;
+	Statement** m_args; // note: only command statements
+	size_t m_nargs;
 }
 StatementCmdData;
 

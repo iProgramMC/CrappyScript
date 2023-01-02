@@ -10,7 +10,7 @@ const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
 char** tokens = NULL;
 size_t ntokens = 0;
 
-void TokenOnError(int error)
+NORETURN void TokenOnError(int error)
 {
 	longjmp(g_errorJumpBuffer, error);
 }

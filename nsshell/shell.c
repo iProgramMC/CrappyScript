@@ -14,8 +14,18 @@ const char* g_errorMsgs[] = {
 	"",
 	"Parser could not allocate memory",
 	"Unterminated block statement",
+	"Unterminated command statement",
 	"Internal error: not a block statement",
+	"Internal error: not a command statement",
 	"Expected statement",
+	"Expected '('",
+	"Expected ')'",
+	"Expected ';'",
+	"Expected 'then'",
+	"Expected '{'",
+	"Expected '}'",
+	"Expected ';' or arguments",
+	"Expected ')' or arguments",
 };
 
 char GetErrorCategory(int error)

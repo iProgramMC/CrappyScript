@@ -4,7 +4,7 @@
 
 extern jmp_buf g_errorJumpBuffer;
 
-void ParserOnError(int error)
+NORETURN void ParserOnError(int error)
 {
 	longjmp(g_errorJumpBuffer, error);
 }
@@ -17,6 +17,8 @@ const char* const gCommonTokens[] =
 	"}",
 	"if",
 	"then",
+	"(",
+	")",
 };
 
 enum eCommonToken
@@ -27,6 +29,9 @@ enum eCommonToken
 	TK_CLOSEBLOCK,
 	TK_IF,
 	TK_THEN,
+	TK_OPENPAREN,
+	TK_CLOSEPAREN,
+	TK_COMMA,
 	TK_END,
 };
 
@@ -70,19 +75,12 @@ char* ConsumeToken()
 Statement* ParserSetupBlockStatement()
 {
 	Statement* pStmt = calloc(1, sizeof(Statement));
-	if (!pStmt)
-	{
-		ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
-		return;
-	}
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+	
 	pStmt->type = STMT_BLOCK;
 
 	pStmt->m_blk_data = calloc(1, sizeof(StatementBlkData));
-	if (!pStmt->m_blk_data)
-	{
-		ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
-		return;
-	}
+	if (!pStmt->m_blk_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_blk_data->m_nstatements = 0;
 	pStmt->m_blk_data->m_statements  = NULL;
@@ -90,25 +88,45 @@ Statement* ParserSetupBlockStatement()
 	return pStmt;
 }
 
+Statement* ParserSetupCommandStatement()
+{
+	Statement* pStmt = calloc(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_COMMAND;
+
+	pStmt->m_cmd_data = calloc(1, sizeof(StatementCmdData));
+	if (!pStmt->m_cmd_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_cmd_data->m_name = NULL;
+	pStmt->m_cmd_data->m_args = NULL;
+	pStmt->m_cmd_data->m_nargs = 0;
+
+	return pStmt;
+}
+
 void ParserAddStmtToBlockStmt(Statement* pBlockStmt, Statement* pAddedStmt)
 {
-	if (pBlockStmt->type != STMT_BLOCK)
-	{
-		ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
-		return;
-	}
+	if (pBlockStmt->type != STMT_BLOCK) ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
 
 	// To the m_blk_data, add a statement.
 	Statement** stmts = (Statement**)realloc(pBlockStmt->m_blk_data->m_statements, (pBlockStmt->m_blk_data->m_nstatements + 1) * sizeof(Statement*));
-	if (!stmts)
-	{
-		ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
-		return;
-	}
+	if (!stmts) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pBlockStmt->m_blk_data->m_statements = stmts;
-
 	pBlockStmt->m_blk_data->m_statements[pBlockStmt->m_blk_data->m_nstatements++] = pAddedStmt;
+}
+
+void ParserAddArgToCmdStmt(Statement* pCmdStmt, Statement* arg)
+{
+	if (pCmdStmt->type != STMT_COMMAND) ParserOnError(ERROR_INTERNAL_NOT_A_COMMAND_STMT);
+
+	// To the m_blk_data, add a statement.
+	Statement** args = (Statement**)realloc(pCmdStmt->m_cmd_data->m_args, (pCmdStmt->m_cmd_data->m_nargs + 1) * sizeof(Statement*));
+	if (!args) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pCmdStmt->m_cmd_data->m_args = args;
+	pCmdStmt->m_cmd_data->m_args[pCmdStmt->m_cmd_data->m_nargs++] = arg;
 }
 
 Statement* ParseIfStatement()
@@ -116,9 +134,74 @@ Statement* ParseIfStatement()
 	return NULL;
 }
 
+Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
+{
+	char* token = ConsumeToken();
+	if (token == NULL)
+	{
+		ParserOnError(ERROR_EXPECTED_STATEMENT);
+		return NULL;
+	}
+
+	Statement* pCmdStmt = ParserSetupCommandStatement();
+
+	pCmdStmt->m_cmd_data->m_name = token;
+
+	token = PeekToken();
+
+	if (!token) ParserOnError(ERROR_EXPECTED_SEMICOLON_OR_ARGUMENTS);
+
+	if (!IS(token, TK_OPENPAREN))
+	{
+		// If we're starting to close up..
+		if (!IS(token, TK_CLOSEPAREN))
+		{
+			if (!bCanExpectSemicolon || !IS(token, TK_SEMICOLON))
+				ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
+		}
+		else
+		{
+			return pCmdStmt;
+		}
+	}
+	else
+	{
+		ConsumeToken();
+
+		// Parse the arguments
+		while (true)
+		{
+			token = PeekToken();
+
+			if (!token)
+				ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
+
+			if (IS(token, TK_CLOSEPAREN))
+			{
+				ConsumeToken();
+				break;
+			}
+
+			Statement* pSubArg = ParseCommandStatementInside(false);
+
+			ParserAddArgToCmdStmt(pCmdStmt, pSubArg);
+
+			LogMsgNoCr("");
+		}
+	}
+
+	return pCmdStmt;
+}
+
 Statement* ParseCommandStatement()
 {
-	return NULL;
+	Statement* pStmt = ParseCommandStatementInside(true);
+
+	char* token = ConsumeToken();
+	if (!token) ParserOnError(ERROR_EXPECTED_SEMICOLON);
+	if (!IS(token, TK_SEMICOLON)) ParserOnError(ERROR_EXPECTED_SEMICOLON);
+
+	return pStmt;
 }
 
 Statement* ParseEmptyStatement()
@@ -162,7 +245,7 @@ void ParseBlockStatementInside(Statement* pBlockStmt)
 		}
 		else
 		{
-			ParserAddStmtToBlockStmt(pBlockStmt, ParseCommandStatement());
+			ParserAddStmtToBlockStmt(pBlockStmt, ParseCommandStatement(false));
 		}
 
 		tk = PeekToken();
@@ -210,18 +293,36 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 {
 	PadLineTo(padding);
 
-	LogMsg("Statement %p. Type %s", pStmt, GetTypeString(pStmt->type));
+	LogMsgNoCr("Statement %p. Type %s", pStmt, GetTypeString(pStmt->type));
 
 	switch (pStmt->type)
 	{
 		case STMT_BLOCK:
 		{
-			for (int i = 0; i < pStmt->m_blk_data->m_nstatements; i++)
+			LogMsg("");
+			for (size_t i = 0; i < pStmt->m_blk_data->m_nstatements; i++)
 			{
 				Statement* pStmtSub = pStmt->m_blk_data->m_statements[i];
 
 				ParserDumpStatement(pStmtSub, padding + 4);
 			}
+			break;
+		}
+		case STMT_COMMAND:
+		{
+			LogMsg("  Name: %s   Arguments:", pStmt->m_cmd_data->m_name);
+
+			for (size_t i = 0; i < pStmt->m_cmd_data->m_nargs; i++)
+			{
+				Statement* pStmtSub = pStmt->m_cmd_data->m_args[i];
+
+				ParserDumpStatement(pStmtSub, padding + 4);
+			}
+			break;
+		}
+		default:
+		{
+			LogMsg("");
 			break;
 		}
 	}
