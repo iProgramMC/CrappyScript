@@ -41,12 +41,12 @@ Token* ConsumeToken()
 
 Statement* ParserSetupBlockStatement()
 {
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 	
 	pStmt->type = STMT_BLOCK;
 
-	pStmt->m_blk_data = calloc(1, sizeof(StatementBlkData));
+	pStmt->m_blk_data = MemCAllocate(1, sizeof(StatementBlkData));
 	if (!pStmt->m_blk_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_blk_data->m_nstatements = 0;
@@ -57,12 +57,12 @@ Statement* ParserSetupBlockStatement()
 
 Statement* ParserSetupCommandStatement()
 {
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_COMMAND;
 
-	pStmt->m_cmd_data = calloc(1, sizeof(StatementCmdData));
+	pStmt->m_cmd_data = MemCAllocate(1, sizeof(StatementCmdData));
 	if (!pStmt->m_cmd_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_cmd_data->m_name = NULL;
@@ -74,12 +74,12 @@ Statement* ParserSetupCommandStatement()
 
 Statement* ParserSetupIfStatement()
 {
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_IF;
 
-	pStmt->m_if_data = calloc(1, sizeof(StatementIfData));
+	pStmt->m_if_data = MemCAllocate(1, sizeof(StatementIfData));
 	if (!pStmt->m_if_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_if_data->m_condition = NULL;
@@ -91,12 +91,12 @@ Statement* ParserSetupIfStatement()
 
 Statement* ParserSetupStringStatement()
 {
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_STRING;
 
-	pStmt->m_str_data = calloc(1, sizeof(StatementStrData));
+	pStmt->m_str_data = MemCAllocate(1, sizeof(StatementStrData));
 	if (!pStmt->m_str_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_str_data->m_str = "";
@@ -106,12 +106,12 @@ Statement* ParserSetupStringStatement()
 
 Statement* ParserSetupFunctionStatement()
 {
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_FUNCTION;
 
-	pStmt->m_fun_data = calloc(1, sizeof(StatementFunData));
+	pStmt->m_fun_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_fun_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_fun_data->m_name      = "";
@@ -124,12 +124,12 @@ Statement* ParserSetupFunctionStatement()
 
 Statement* ParserSetupVariableStatement()
 {
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_VARIABLE;
 
-	pStmt->m_var_data = calloc(1, sizeof(StatementFunData));
+	pStmt->m_var_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_var_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_var_data->m_name      = "";
@@ -143,7 +143,7 @@ void ParserAddStmtToBlockStmt(Statement* pBlockStmt, Statement* pAddedStmt)
 	if (pBlockStmt->type != STMT_BLOCK) ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
 
 	// To the m_blk_data, add a statement.
-	Statement** stmts = (Statement**)realloc(pBlockStmt->m_blk_data->m_statements, (pBlockStmt->m_blk_data->m_nstatements + 1) * sizeof(Statement*));
+	Statement** stmts = (Statement**)MemReAllocate(pBlockStmt->m_blk_data->m_statements, (pBlockStmt->m_blk_data->m_nstatements + 1) * sizeof(Statement*));
 	if (!stmts) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pBlockStmt->m_blk_data->m_statements = stmts;
@@ -155,7 +155,7 @@ void ParserAddArgToCmdStmt(Statement* pCmdStmt, Statement* arg)
 	if (pCmdStmt->type != STMT_COMMAND) ParserOnError(ERROR_INTERNAL_NOT_A_COMMAND_STMT);
 
 	// To the m_blk_data, add a statement.
-	Statement** args = (Statement**)realloc(pCmdStmt->m_cmd_data->m_args, (pCmdStmt->m_cmd_data->m_nargs + 1) * sizeof(Statement*));
+	Statement** args = (Statement**)MemReAllocate(pCmdStmt->m_cmd_data->m_args, (pCmdStmt->m_cmd_data->m_nargs + 1) * sizeof(Statement*));
 	if (!args) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pCmdStmt->m_cmd_data->m_args = args;
@@ -167,7 +167,7 @@ void ParserAddArgToFunStmt(Statement* pFunStmt, char* arg)
 	if (pFunStmt->type != STMT_FUNCTION) ParserOnError(ERROR_INTERNAL_NOT_A_FUNCTION_STMT);
 
 	// To the m_blk_data, add a statement.
-	char** args = (char**)realloc(pFunStmt->m_fun_data->m_args, (pFunStmt->m_fun_data->m_nargs + 1) * sizeof(char*));
+	char** args = (char**)MemReAllocate(pFunStmt->m_fun_data->m_args, (pFunStmt->m_fun_data->m_nargs + 1) * sizeof(char*));
 	if (!args) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pFunStmt->m_fun_data->m_args = args;
@@ -356,7 +356,7 @@ Statement* ParseEmptyStatement()
 
 	ConsumeToken();
 	
-	Statement* pStmt = calloc(1, sizeof(Statement));
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt)
 	{
 		ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);

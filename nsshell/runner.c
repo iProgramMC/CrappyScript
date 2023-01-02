@@ -110,7 +110,7 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 
 				// if it returned something, we most likely won't use it. Free the memory.
 				if (returnValue)
-					free(returnValue);
+					MemFree(returnValue);
 			}
 
 			break;
@@ -182,7 +182,7 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 			for (size_t i = 0; i < pData->m_nargs; i++)
 			{
 				if (args[i])
-					free(args[i]);
+					MemFree(args[i]);
 
 				args[i] = NULL;
 			}
@@ -216,6 +216,6 @@ void RunnerGo()
 
 	// If this happens to return anything, free it
 	if (chr)
-		free(chr);
+		MemFree(chr);
 }
 

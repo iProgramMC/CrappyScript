@@ -42,7 +42,7 @@ void TokenAppend(char** token, size_t* sz, char chr)
 		*sz = 1;
 	}
 
-	char* newToken = realloc(*token, (*sz) + 1);
+	char* newToken = MemReAllocate(*token, (*sz) + 1);
 
 	if (!newToken)
 	{
@@ -57,9 +57,9 @@ void TokenAppend(char** token, size_t* sz, char chr)
 	(*sz)++;
 }
 
-// same with this. TODO reduce the number of reallocs for TokenAdd and TokenAppend
+// same with this. TODO reduce the number of MemReAllocates for TokenAdd and TokenAppend
 
-// note: this must take a malloc'ed buffer, or NULL
+// note: this must take a MemAllocate'ed buffer, or NULL
 
 void TokenAdd(int type, char* data)
 {
@@ -67,12 +67,12 @@ void TokenAdd(int type, char* data)
 	if (type == TK_KEYWORD_START && data == NULL)
 		return;
 
-	Token** newTokens = realloc(tokens, sizeof(Token*) * (ntokens + 1));
+	Token** newTokens = MemReAllocate(tokens, sizeof(Token*) * (ntokens + 1));
 	if (!newTokens) TokenOnError(ERROR_MEMORY_ALLOC_FAILURE);
 
 	tokens = newTokens;
 
-	Token* pToken = calloc(1, sizeof(Token));
+	Token* pToken = MemCAllocate(1, sizeof(Token));
 	if (!pToken) TokenOnError(ERROR_MEMORY_ALLOC_FAILURE);
 
 	tokens[ntokens++] = pToken;
@@ -97,7 +97,7 @@ void TokenAdd(int type, char* data)
 			default: TokenOnError(ERROR_INTERNAL_UNKNOWN_SYMBOL_TOKEN);
 		}
 
-		free(data);
+		MemFree(data);
 	}
 
 	if (type == TK_KEYWORD_START)
@@ -106,7 +106,7 @@ void TokenAdd(int type, char* data)
 		{
 			if (strcmp(pToken->m_data, gKeywordKeys[i - TK_KEYWORD_START]) == 0)
 			{
-				free(pToken->m_data);
+				MemFree(pToken->m_data);
 				pToken->m_type = i;
 				pToken->m_data = NULL;
 				break;
@@ -147,7 +147,7 @@ void Tokenise()
 			currentTokenSize = 0;
 
 			// add a NEW token, this being the single symbol
-			currentToken = malloc(2);
+			currentToken = MemAllocate(2);
 			currentToken[0] = c;
 			currentToken[1] = 0;
 			TokenAdd(TK_SYMBOL_START, currentToken);

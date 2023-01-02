@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="allocator.c" />
     <ClCompile Include="builtin.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="nanoshell.c" />
@@ -148,6 +149,7 @@
     <ClCompile Include="tokeniser.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="allocator.h" />
     <ClInclude Include="builtin.h" />
     <ClInclude Include="nanoshell.h" />
     <ClInclude Include="parser.h" />

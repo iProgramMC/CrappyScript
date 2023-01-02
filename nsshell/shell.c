@@ -110,9 +110,13 @@ void LoadFile(const char* pfn)
 	//TokensDump();
 	Parse();
 
+	MemDebugPrint();
+
 	LogMsg("Running.....\n\n");
 
 	RunnerGo();
+
+	MemDebugPrint();
 
 	fclose(f);
 	g_file = NULL;

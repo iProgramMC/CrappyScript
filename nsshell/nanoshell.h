@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "allocator.h"
 
 void LogMsg(const char*, ...);
 void LogMsgNoCr(const char*, ...);
@@ -13,6 +14,6 @@ void GetRidOfTrailingNewLine(char* buffer);
 void ShellPrintMotd();
 void ShellExecuteCommand(const char* buffer);
 
-#define strdup _strdup
+#define strdup StrDuplicate
 
 #endif//_NANOSHELL_H
