@@ -13,5 +13,6 @@ void GetRidOfTrailingNewLine(char* buffer);
 void ShellPrintMotd();
 void ShellExecuteCommand(const char* buffer);
 
+#define strdup _strdup
 
 #endif//_NANOSHELL_H

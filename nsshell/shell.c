@@ -1,5 +1,7 @@
 #include "shell.h"
 #include "tokeniser.h"
+#include "parser.h"
+#include "runner.h"
 
 FILE* g_file;
 jmp_buf g_errorJumpBuffer;
@@ -40,15 +42,25 @@ const char* g_errorMsgs[] = {
 	"Expected command",
 	"Expected 'if' statement",
 	"Expected 'while' statement",
+	"Expected string statement",
 	"Expected ';' statement",
 	"Expected variable definition",
 	"Expected variable name",
+	"",
+	"Runner could not allocate memory",
+	"Internal error: unknown statement type",
+	"Unknown function or variable name",
+	"Arguments specified for a variable as if it were a function call",
+	"Too many arguments in function call",
+	"Too few arguments in function call",
+	"Too many arguments in function definition",
 };
 
 char GetErrorCategory(int error)
 {
 	if (error <= ERROR_NONE || error >= ERROR_END) return 'U';
 
+	if (error >= ERROR_RUNTIME_START) return 'R';
 	if (error >= ERROR_PARSER_START) return 'P';
 	if (error >= ERROR_TOKENIZER_START) return 'T';
 
@@ -59,6 +71,7 @@ int GetErrorNumber(int error)
 {
 	if (error <= ERROR_NONE || error >= ERROR_END) return error;
 
+	if (error >= ERROR_RUNTIME_START) return error - ERROR_RUNTIME_START;
 	if (error >= ERROR_PARSER_START) return error - ERROR_PARSER_START;
 	if (error >= ERROR_TOKENIZER_START) return error - ERROR_TOKENIZER_START;
 
@@ -96,6 +109,10 @@ void LoadFile(const char* pfn)
 
 	//TokensDump();
 	Parse();
+
+	LogMsg("Running.....\n\n");
+
+	RunnerGo();
 
 	fclose(f);
 	g_file = NULL;

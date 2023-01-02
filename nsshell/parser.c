@@ -564,6 +564,7 @@ static const char* const g_ts[] =
 	"STMT_WHILE",
 	"STMT_STRING",
 	"STMT_FUNCTION",
+	"STMT_VARIABLE",
 };
 
 const char* GetTypeString(eStatementType type)

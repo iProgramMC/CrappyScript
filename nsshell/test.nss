@@ -1,24 +1,9 @@
 
-let fortytwo = "42";
+help;
 
-var fortytwo2 = fortytwo;
+echo("hello");
 
-function fnname(arg1, arg2)
-{
-	printf("%s %s", arg1, arg2);
-	return("hello");
-}
+ver;
 
-var nothing;
 
-fun second
-{
-	test();
-}
-
-var funny = fnname(nothing, "44");
-
-fnname(funny, "world");
-
-second;
 
