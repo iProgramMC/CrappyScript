@@ -1,4 +1,4 @@
-                      CrappyScript - A really crappy scripting language
+                    CrappyScript - A really crappy scripting language
 
     Now, why am I calling this crappy? It's really simple - because it's REALLY quick & dirty
 in how it's designed. It only works on strings (for now?), and it's designed as I go. This
@@ -8,8 +8,9 @@ This language is quite simple to parse since it does not feature infix operation
 was a hypothetical arithmetic addition operation, it would be a built-in function instead of
 an in-fix operator (so `add("2", "5")` instead of `"2" + "5"`).
 
-         This code is licensed under the MIT license. Check LICENSE for details.
+    Please note that this code is very preliminary, and also, potentially unstable.
 
+       This code is licensed under the MIT license. Check the LICENSE for details.
 
 
 Important notes about this language:
@@ -41,8 +42,6 @@ Important notes about this language:
 * Calls to functions with no arguments can omit the parentheses. So `something;` instead of
   `something();`
 
-* The 
-
 
 Quirks of this language:
 * Because of how functions and variables are used, you may get the value of a variable by
@@ -55,3 +54,65 @@ Quirks of this language:
   C functions will let me). So yes, you can name your "hello" function `こんにちわ`.
 
 * Global variables take over parameter names.
+
+This language is VERY incomplete. A lot of features are still TBD, including, but not limited to:
+
+* If and while statements.
+
+* Function prototypes.
+
+* Very possible, but I'm not sure: Non string variables.
+
+* String operations such as substring, length (would generate a number string, like "5" for
+  "hello", or "10" for "NanoShell!")
+
+* Arithmetic operations on number strings. (So strings that are just numbers, like "1234" or "5")
+
+* Reading input from the user.
+
+* Loading a file other than "test.nss".
+
+* Specifying command line parameters to the main function. These will be accessed through the
+  special names $arg1 through $arg128, and $argcount
+
+* For loops. Their syntax could be something like this:
+  `for [init <statement>] [check <statement>] [step <statement>]`
+  This may or may not be done after arithmetic operations.
+
+* File I/O.
+
+* Running programs from the file system.
+
+* A port to NanoShell as a user program.
+
+Statistics as of commit `7564e289`:
+
+Parser: 819 lines
+Runner: 420 lines
+Tokenizer: 270 lines
+Allocator: 150 lines
+Shell: 129 lines
+Built-in: 45 lines
+Main file: 30 lines
+NanoShell: 21 lines
+
+Explanation for each component:
+* NanoShell: This contains the LogMsg functions.
+
+* Main file: Responsible for running the script file.
+
+* Shell: This is responsible for running each phase of the script's execution, and error
+  handling.
+
+* Tokenizer: Tokenizes the code so that this program will have an easier time parsing it.
+
+* Parser: Builds a statement tree which will be "run" by the runner.
+
+* Runner: Runs the program itself.
+
+* Allocator: Permits easy debugging of any memory leaks that may arise as a result of uncareful
+  programming.
+
+* Built-in: This file contains the code for all the built in commands supported. The runner
+  imports them and makes them work when the script calls them.
+
