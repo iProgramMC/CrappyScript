@@ -12,6 +12,16 @@ an in-fix operator (so `add("2", "5")` instead of `"2" + "5"`).
 
        This code is licensed under the MIT license. Check the LICENSE for details.
 
+Building:
+
+  Windows
+
+    To build this on windows you may either open the provided Visual Studio project or use
+  MinGW and type `make`.
+
+  Linux
+
+    To build this on Linux type `make`. Make sure you have `gcc` installed.
 
 Important notes about this language:
 
@@ -115,4 +125,3 @@ Explanation for each component:
 
 * Built-in: This file contains the code for all the built in commands supported. The runner
   imports them and makes them work when the script calls them.
-
