@@ -82,8 +82,8 @@ Statement* ParserSetupIfStatement()
 	pStmt->m_if_data = MemCAllocate(1, sizeof(StatementIfData));
 	if (!pStmt->m_if_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
-	pStmt->m_if_data->m_condition = NULL;
-	pStmt->m_if_data->m_true_part = NULL;
+	pStmt->m_if_data->m_condition  = NULL;
+	pStmt->m_if_data->m_true_part  = NULL;
 	pStmt->m_if_data->m_false_part = NULL;
 
 	return pStmt;
@@ -99,7 +99,7 @@ Statement* ParserSetupStringStatement()
 	pStmt->m_str_data = MemCAllocate(1, sizeof(StatementStrData));
 	if (!pStmt->m_str_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
-	pStmt->m_str_data->m_str = "";
+	pStmt->m_str_data->m_str = NULL;
 
 	return pStmt;
 }
@@ -114,7 +114,7 @@ Statement* ParserSetupFunctionStatement()
 	pStmt->m_fun_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_fun_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
-	pStmt->m_fun_data->m_name      = "";
+	pStmt->m_fun_data->m_name      = NULL;
 	pStmt->m_fun_data->m_statement = NULL;
 	pStmt->m_fun_data->m_args      = NULL;
 	pStmt->m_fun_data->m_nargs     = 0;
@@ -132,8 +132,24 @@ Statement* ParserSetupVariableStatement()
 	pStmt->m_var_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_var_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
-	pStmt->m_var_data->m_name      = "";
+	pStmt->m_var_data->m_name      = NULL;
 	pStmt->m_var_data->m_statement = NULL;
+
+	return pStmt;
+}
+
+Statement* ParseSetupAssignmentStatement()
+{
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_ASSIGNMENT;
+
+	pStmt->m_var_data = MemCAllocate(1, sizeof(StatementFunData));
+	if (!pStmt->m_var_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_asg_data->m_varName   = NULL;
+	pStmt->m_asg_data->m_statement = NULL;
 
 	return pStmt;
 }
@@ -185,6 +201,11 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 
 	if (IS(token, TK_STRING))
 		return ParseStringStatement();
+
+	if (!IS(token, TK_KEYWORD_START))
+	{
+		ParserOnError(ERROR_EXPECTED_KEYWORD);
+	}
 
 	ConsumeToken();
 
@@ -357,11 +378,7 @@ Statement* ParseEmptyStatement()
 	ConsumeToken();
 	
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
-	if (!pStmt)
-	{
-		ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
-		return;
-	}
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_NULL;
 
@@ -466,7 +483,7 @@ Statement* ParseLetStatement()
 	// Check the next token. If it's an equals sign, that means afterwards there will be a new statement.
 	tk = PeekToken();
 
-	if (IS(tk, TK_EQUALS))
+	if (IS(tk, TK_EQUALS) || IS(tk, TK_BE))
 	{
 		ConsumeToken();
 
@@ -486,6 +503,44 @@ Statement* ParseLetStatement()
 	}
 
 	return pVarStmt;
+}
+
+Statement* ParseAssignmentStatement()
+{
+	Statement* pStmt = ParseSetupAssignmentStatement();
+
+	Token* tk = PeekToken();
+	if (!tk) ParserOnError(ERROR_EXPECTED_ASSIGN_STATEMENT);
+	if (!IS(tk, TK_ASSIGN)) ParserOnError(ERROR_EXPECTED_ASSIGN_STATEMENT);
+
+	ConsumeToken();
+
+	tk = PeekToken();
+	if (!IS(tk, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_VARIABLE_NAME);
+
+	pStmt->m_asg_data->m_varName = StrDuplicate(tk->m_data);
+
+	ConsumeToken();
+	tk = PeekToken();
+	if (!IS(tk, TK_EQUALS) && !IS(tk, TK_TO)) ParserOnError(ERROR_EXPECTED_EQUALS_OR_TO);
+
+	ConsumeToken();
+
+	// okay, now parse a statement
+	pStmt->m_asg_data->m_statement = ParseGenericStatement();
+
+	// hack for now: If this is a STMT_COMMAND statement, it already ate the semicolon
+	if (pStmt->m_asg_data->m_statement->type == STMT_COMMAND)
+		return pStmt;
+
+	// Ensure this declaration is finished off with a semicolon
+	tk = PeekToken();
+	if (!IS(tk, TK_SEMICOLON))
+	{
+		ParserOnError(ERROR_EXPECTED_SEMICOLON);
+	}
+
+	return pStmt;
 }
 
 Statement* ParseGenericStatement()
@@ -510,6 +565,8 @@ Statement* ParseGenericStatement()
 		pStmt = ParseFunctionStatement();
 	else if (IS(tk, TK_LET) || IS(tk, TK_VAR))
 		pStmt = ParseLetStatement();
+	else if (IS(tk, TK_ASSIGN))
+		pStmt = ParseAssignmentStatement();
 	else
 		pStmt = ParseCommandStatement(false);
 
@@ -539,7 +596,7 @@ Statement* ParseBlockStatement()
 	
 	ParseBlockStatementInside(subBlockStmt);
 	
-	char* tkn = ConsumeToken();
+	Token* tkn = ConsumeToken();
 	if (tkn == NULL)
 	{
 		ParserOnError(ERROR_UNTERMINATED_BLOCK_STMT);
@@ -565,6 +622,7 @@ static const char* const g_ts[] =
 	"STMT_STRING",
 	"STMT_FUNCTION",
 	"STMT_VARIABLE",
+	"STMT_ASSIGNMENT",
 };
 
 const char* GetTypeString(eStatementType type)
@@ -582,7 +640,8 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 		return;
 	}
 
-	LogMsgNoCr("Statement %p. Type %s", pStmt, GetTypeString(pStmt->type));
+	LogMsgNoCr("Type %s", GetTypeString(pStmt->type));
+	//LogMsgNoCr("Statement %p. Type %s", pStmt, GetTypeString(pStmt->type));
 
 	switch (pStmt->type)
 	{
@@ -627,6 +686,7 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 
 			PadLineTo(padding); LogMsg("False branch: ");
 			ParserDumpStatement(pStmt->m_if_data->m_false_part, padding + 4);
+			break;
 		}
 		case STMT_FUNCTION:
 		{
@@ -637,6 +697,26 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 
 			PadLineTo(padding); LogMsg("Function body:");
 			ParserDumpStatement(pStmt->m_fun_data->m_statement, padding + 4);
+			break;
+		}
+		case STMT_VARIABLE:
+		{
+			if (!pStmt->m_var_data->m_statement)
+			{
+				LogMsg("  New Variable Name: %s  No Default Value", pStmt->m_var_data->m_name);
+			}
+			else
+			{
+				LogMsg("  New Variable Name: %s  Assignee:", pStmt->m_var_data->m_name);
+				ParserDumpStatement(pStmt->m_var_data->m_statement, padding + 4);
+			}
+			break;
+		}
+		case STMT_ASSIGNMENT:
+		{
+			LogMsg("  Destination: %s  Assignee:", pStmt->m_asg_data->m_varName);
+			ParserDumpStatement(pStmt->m_asg_data->m_statement, padding + 4);
+			break;
 		}
 		default:
 		{
@@ -644,6 +724,9 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 			break;
 		}
 	}
+
+	PadLineTo(padding);
+	LogMsg("End-Statement");
 }
 
 void ParserFreeStatement(Statement* pStatement)
@@ -703,6 +786,12 @@ void ParserFreeStatement(Statement* pStatement)
 			ParserFreeStatement(pStatement->m_if_data->m_condition);
 			ParserFreeStatement(pStatement->m_if_data->m_true_part);
 			ParserFreeStatement(pStatement->m_if_data->m_false_part);
+			break;
+		}
+		case STMT_ASSIGNMENT:
+		{
+			MemFree(pStatement->m_asg_data->m_varName);
+			ParserFreeStatement(pStatement->m_asg_data->m_statement);
 			break;
 		}
 	}

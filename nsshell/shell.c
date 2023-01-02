@@ -34,6 +34,9 @@ const char* g_errorMsgs[] = {
 	"Expected ';' or arguments",
 	"Expected ')' or arguments",
 	"Expected ','",
+	"Expected '='",
+	"Expected '=' or 'to'",
+	"Expected '=' or 'be'",
 	"Expected string",
 	"Expected function name",
 	"Expected arguments",
@@ -45,7 +48,9 @@ const char* g_errorMsgs[] = {
 	"Expected string statement",
 	"Expected ';' statement",
 	"Expected variable definition",
+	"Expected assignment",
 	"Expected variable name",
+	"Expected name",
 	"",
 	"Runner could not allocate memory",
 	"Internal error: unknown statement type",
@@ -54,6 +59,9 @@ const char* g_errorMsgs[] = {
 	"Too many arguments in function call",
 	"Too few arguments in function call",
 	"Too many arguments in function definition",
+	"Function is already defined",
+	"Variable is already defined",
+	"Assignee is not a variable",
 };
 
 char GetErrorCategory(int error)
@@ -108,8 +116,9 @@ void LoadFile(const char* pfn)
 	Tokenise();
 	Parse();
 	RunnerGo();
-	TokenTeardown();
+	RunnerCleanup();
 	ParserTeardown();
+	TokenTeardown();
 	MemDebugPrint();
 
 	fclose(f);

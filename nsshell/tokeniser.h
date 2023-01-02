@@ -29,6 +29,9 @@ typedef enum
 	TK_FUNCTION_SHORT,
 	TK_LET,
 	TK_VAR,
+	TK_ASSIGN,
+	TK_TO,
+	TK_BE,
 
 	TK_KEYWORD_END,
 

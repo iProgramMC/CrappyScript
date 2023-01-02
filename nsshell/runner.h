@@ -39,3 +39,4 @@ struct Function
 };
 
 void RunnerGo();
+void RunnerCleanup();

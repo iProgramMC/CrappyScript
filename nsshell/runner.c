@@ -15,6 +15,43 @@ NORETURN void RunnerOnError(int error)
 // This could be optimized. By a lot.
 Function* g_functionsList;
 
+char* RunStatement(Statement* pStatement, int argc, char** argv);
+
+void RunnerFreeFunction(Function * pFunc)
+{
+	if (pFunc->type == FUNCTION_VARIABLE)
+	{
+		MemFree(pFunc->m_pContents);
+	}
+
+	// if it's a pointer, we shouldn't free it, and if it's a statement, it's managed by the parser code
+
+	MemFree(pFunc);
+}
+
+void RunnerRemoveFunctionFromList(Function* pFunc)
+{
+	if (pFunc == g_functionsList)
+	{
+		g_functionsList = pFunc->m_nlink;
+		if (g_functionsList)
+			g_functionsList->m_plink = NULL;
+	}
+	else
+	{
+		if (pFunc->m_nlink) pFunc->m_nlink->m_plink = pFunc->m_plink;
+		if (pFunc->m_plink) pFunc->m_plink->m_nlink = pFunc->m_nlink;
+	}
+
+	RunnerFreeFunction(pFunc);
+}
+
+void RunnerCleanup()
+{
+	while (g_functionsList)
+		RunnerRemoveFunctionFromList(g_functionsList);
+}
+
 void RunnerAddFunctionToList(Function* pFunc)
 {
 	if (g_functionsList == NULL)
@@ -36,7 +73,7 @@ void RunnerAddFunctionPtr(CallableFunPtr fp, const char* fname, int nargs, bool 
 		LogMsg("ERROR: Too many arguments specified in this function. Not a great idea!");
 	}
 
-	Function* pFunc = calloc(1, sizeof (Function));
+	Function* pFunc = MemCAllocate(1, sizeof (Function));
 	if (!pFunc)
 	{
 		RunnerOnError(ERROR_R_MEMORY_ALLOC_FAILURE);
@@ -58,7 +95,7 @@ void RunnerAddFunctionStatement(Statement* statement, const char* fname, int nar
 		RunnerOnError(ERROR_TOO_MANY_ARGS_DEF);
 	}
 
-	Function* pFunc = calloc(1, sizeof(Function));
+	Function* pFunc = MemCAllocate(1, sizeof(Function));
 	if (!pFunc)
 	{
 		RunnerOnError(ERROR_R_MEMORY_ALLOC_FAILURE);
@@ -71,6 +108,30 @@ void RunnerAddFunctionStatement(Statement* statement, const char* fname, int nar
 	pFunc->m_bReturns = returns;
 	pFunc->m_nArgs = nargs;
 	pFunc->m_pStatement = statement;
+}
+
+void RunnerAddFunctionVariable(Statement* statement, const char* fname)
+{
+	Function* pFunc = MemCAllocate(1, sizeof(Function));
+	if (!pFunc)
+	{
+		RunnerOnError(ERROR_R_MEMORY_ALLOC_FAILURE);
+	}
+
+	RunnerAddFunctionToList(pFunc);
+
+	pFunc->type = FUNCTION_VARIABLE;
+	pFunc->m_name = fname;
+	pFunc->m_bReturns = true;
+	pFunc->m_nArgs = 0;
+	if (statement)
+	{
+		pFunc->m_pContents = RunStatement(statement, 0, NULL);
+	}
+	else
+	{
+		pFunc->m_pContents = StrDuplicate("");
+	}
 }
 
 Function * RunnerLookUpFunction(const char * name)
@@ -108,10 +169,66 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 			{
 				char* returnValue = RunStatement(pData->m_statements[i], 0, NULL);
 
+				// TempleOS style. If this statement was a simple string, just print it.
+				if (pData->m_statements[i]->type == STMT_STRING)
+				{
+					LogMsg("%s", pData->m_statements[i]->m_str_data->m_str);
+				}
+
 				// if it returned something, we most likely won't use it. Free the memory.
 				if (returnValue)
 					MemFree(returnValue);
 			}
+
+			break;
+		}
+		case STMT_FUNCTION:
+		{
+			// Add the function to the list of known functions.
+			StatementFunData* pData = pStatement->m_fun_data;
+
+			Function* pPreExistingFunc = RunnerLookUpFunction(pData->m_name);
+			if (pPreExistingFunc)
+				RunnerOnError(ERROR_FUNCTION_ALREADY_EXISTS);
+
+			RunnerAddFunctionStatement(pData->m_statement, pData->m_name, pData->m_nargs, true);
+
+			break;
+		}
+		case STMT_VARIABLE:
+		{
+			StatementVarData* pData = pStatement->m_var_data;
+
+			Function* pPreExistingFunc = RunnerLookUpFunction(pData->m_name);
+			if (pPreExistingFunc)
+				RunnerOnError(ERROR_VARIABLE_ALREADY_EXISTS);
+			
+			RunnerAddFunctionVariable(pData->m_statement, pData->m_name);
+
+			break;
+		}
+		case STMT_ASSIGNMENT:
+		{
+			StatementVarData* pData = pStatement->m_var_data;
+
+			Function* pPreExistingFunc = RunnerLookUpFunction(pData->m_name);
+
+			//well, I'm going to be nice and allow this behavior
+			if (!pPreExistingFunc)
+			{
+				RunnerAddFunctionVariable(pData->m_statement, pData->m_name);
+				pPreExistingFunc = RunnerLookUpFunction(pData->m_name);
+			}
+
+			if (pPreExistingFunc->type != FUNCTION_VARIABLE)
+			{
+				RunnerOnError(ERROR_ASSIGNEE_IS_NOT_VARIABLE);
+			}
+
+			if (pPreExistingFunc->m_pContents)
+				MemFree(pPreExistingFunc->m_pContents);
+
+			pPreExistingFunc->m_pContents = RunStatement(pData->m_statement, 0, NULL);
 
 			break;
 		}
@@ -206,6 +323,8 @@ void RunnerAddStandardFunctions()
 	RunnerAddFunctionPtr(BuiltInVersion, "ver" ,   0, false);
 	RunnerAddFunctionPtr(BuiltInEcho,    "echo",   1, false);
 	RunnerAddFunctionPtr(BuiltInGetVer,  "getver", 0, true);
+	RunnerAddFunctionPtr(BuiltInEquals,  "equals", 2, true);
+	RunnerAddFunctionPtr(BuiltInConcat,  "concat", 2, true);
 }
 
 void RunnerGo()

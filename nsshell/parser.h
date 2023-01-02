@@ -10,6 +10,7 @@ typedef enum
 	STMT_STRING,
 	STMT_FUNCTION,
 	STMT_VARIABLE,
+	STMT_ASSIGNMENT,
 }
 eStatementType;
 
@@ -62,6 +63,14 @@ typedef struct
 }
 StatementVarData;
 
+typedef struct
+{
+	char* m_varName;
+	Statement* m_statement;
+}
+StatementAsgData;
+// No, I'm not going to name this "StatementAssData"
+
 typedef struct STATEMENT
 {
 	eStatementType type;
@@ -75,6 +84,7 @@ typedef struct STATEMENT
 		StatementStrData* m_str_data;
 		StatementFunData* m_fun_data;
 		StatementVarData* m_var_data;
+		StatementAsgData* m_asg_data;
 	};
 }
 Statement;
