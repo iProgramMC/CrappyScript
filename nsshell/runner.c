@@ -189,7 +189,13 @@ char* RunStatement(Statement* pStatement, int argc, char** argv)
 
 			Function* pPreExistingFunc = RunnerLookUpFunction(pData->m_name);
 			if (pPreExistingFunc)
-				RunnerOnError(ERROR_FUNCTION_ALREADY_EXISTS);
+			{
+				// If the function has the same body, it should be okay.
+				if (pPreExistingFunc->m_pStatement != pData->m_statement)
+				{
+					RunnerOnError(ERROR_FUNCTION_ALREADY_EXISTS);
+				}
+			}
 
 			RunnerAddFunctionStatement(pData->m_statement, pData->m_name, pData->m_nargs, true);
 

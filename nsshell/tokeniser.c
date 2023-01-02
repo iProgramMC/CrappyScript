@@ -130,6 +130,18 @@ void Tokenise()
 
 		char c = (char)cint;
 
+		// If this is a hash, we're starting a new comment.
+		if (c == '#')
+		{
+			while (c != EOF)
+			{
+				c = (char)fgetc(g_file);
+				if (c == '\n')
+					break;
+			}
+			continue;
+		}
+
 		// if this is white space
 		if (isspace(c) || iscntrl(c))
 		{

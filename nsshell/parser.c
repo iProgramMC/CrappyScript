@@ -257,9 +257,7 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 		while (true)
 		{
 			token = PeekToken();
-
-			if (!token)
-				ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
+			if (!token) ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
 
 			Statement* pSubArg = ParseCommandStatementInside(false);
 
@@ -267,6 +265,8 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 
 			// check if we have a comma
 			token = PeekToken();
+			if (!token) ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
+
 			if (IS(token, TK_COMMA))
 			{
 				ConsumeToken();
