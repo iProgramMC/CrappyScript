@@ -4,7 +4,7 @@
 
 #define C_MAX_ARGS (64)
 #define C_MAX_BUILTIN_ARGS (8)
-#define C_MAX_STACK (1024)
+#define C_MAX_STACK (128)
 
 typedef enum
 {

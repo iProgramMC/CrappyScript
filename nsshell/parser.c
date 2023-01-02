@@ -392,12 +392,10 @@ Statement* ParseStringStatement()
 
 	Statement* pStmt = ParserSetupStringStatement();
 
-	if (!PeekToken())
-	{
-		ParserOnError(ERROR_EXPECTED_STRING);
-	}
-
-	pStmt->m_str_data->m_str = StrDuplicate(ConsumeToken()->m_data);
+	const char* text = ConsumeToken()->m_data;
+	if (!text) text = "";
+		
+	pStmt->m_str_data->m_str = StrDuplicate(text);
 
 	return pStmt;
 }

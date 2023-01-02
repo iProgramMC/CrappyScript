@@ -5,11 +5,6 @@
 
 extern jmp_buf g_errorJumpBuffer;
 
-NORETURN void RunnerOnError(int error)
-{
-	longjmp(g_errorJumpBuffer, error);
-}
-
 typedef struct
 {
 	Function* m_pFunction;
@@ -20,6 +15,23 @@ CallStackFrame;
 
 static CallStackFrame g_callStack[C_MAX_STACK];
 static int g_callStackPointer;
+
+NORETURN void RunnerOnError(int error)
+{
+	LogMsg("Runtime Error %c%04d: %s", GetErrorCategory(error), GetErrorNumber(error), GetErrorMessage(error));
+	LogMsg("Call stack: ");
+	for (int i = g_callStackPointer; i >= 0; i--)
+	{
+		const char* fName = "Entry point";
+		Function* pFn = g_callStack[i].m_pFunction;
+		if (pFn != NULL)
+			fName = pFn->m_name;
+
+		LogMsg("%s %s", i == g_callStackPointer ? "->" : " *", fName);
+	}
+
+	longjmp(g_errorJumpBuffer, error);
+}
 
 // The runner is very simple - it looks through the statements and does decisions based on them.
 
@@ -337,6 +349,10 @@ char* RunStatement(Statement* pStatement)
 				case FUNCTION_STATEMENT:
 				{
 					// This is a statement function.
+					if (g_callStackPointer + 1 >= C_MAX_STACK)
+					{
+						RunnerOnError(ERROR_STACK_OVERFLOW);
+					}
 
 					// Add a new value to the call stack
 					CallStackFrame* pItem = &g_callStack[g_callStackPointer + 1];

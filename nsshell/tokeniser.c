@@ -202,6 +202,8 @@ void Tokenise()
 				if (c == '"')
 				{
 					//well, we're done
+					if (!currentToken)
+						currentToken = StrDuplicate("");
 					TokenAdd(TK_STRING, currentToken);
 					currentToken = NULL;
 					currentTokenSize = 0;

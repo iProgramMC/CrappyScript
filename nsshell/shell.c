@@ -62,6 +62,7 @@ const char* g_errorMsgs[] = {
 	"Function is already defined",
 	"Variable is already defined",
 	"Assignee is not a variable",
+	"Call stack overflow",
 };
 
 char GetErrorCategory(int error)

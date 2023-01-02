@@ -81,9 +81,15 @@ enum eErrorCode
 	ERROR_FUNCTION_ALREADY_EXISTS,
 	ERROR_VARIABLE_ALREADY_EXISTS,
 	ERROR_ASSIGNEE_IS_NOT_VARIABLE,
+	ERROR_STACK_OVERFLOW,
 
 	ERROR_END,
 };
+
+
+char GetErrorCategory(int error);
+int  GetErrorNumber(int error);
+const char* GetErrorMessage(int error);
 
 void LoadFile(const char* pfn);
 

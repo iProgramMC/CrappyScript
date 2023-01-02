@@ -11,6 +11,12 @@ function argumentTest(parm)
 	echo(concat(concat("Argument test! And the argument passed in is \e[91m\"", parm), "\"\e[0m!"));
 }
 
+function IntentionalStackOverflow(sucks)
+{
+	echo(sucks);
+	IntentionalStackOverflow(concat(sucks,"a"));
+}
+
 argumentTest("yoo");
 
 function testing
@@ -55,5 +61,7 @@ echo(test());
 
 testing;
 testing;
+
+IntentionalStackOverflow("");
 
 # A comment here.
