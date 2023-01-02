@@ -5,12 +5,6 @@
 extern jmp_buf g_errorJumpBuffer;
 extern FILE* g_file;
 
-const char* g_predefinedTokens[] = {
-	"if",
-	"then",
-	"fi",
-};
-
 const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
 
 char** tokens = NULL;
@@ -21,6 +15,7 @@ void TokenOnError(int error)
 	longjmp(g_errorJumpBuffer, error);
 }
 
+// note: this could be done better
 void TokenAppend(char** token, size_t* sz, char chr)
 {
 	if (*sz == 0)
@@ -43,6 +38,9 @@ void TokenAppend(char** token, size_t* sz, char chr)
 	(*sz)++;
 }
 
+// same with this. TODO reduce the number of reallocs for TokenAdd and TokenAppend
+
+// note: this must take a malloc'ed buffer
 void TokenAdd(char* token)
 {
 	if (!token) return;

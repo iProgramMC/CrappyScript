@@ -16,7 +16,6 @@ char g_cwd[256];
 void ShellExecuteBatchFile(const char* pfn)
 {
 	LoadFile(pfn);
-
 }
 
 int main()

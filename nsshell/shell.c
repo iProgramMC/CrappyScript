@@ -7,11 +7,15 @@ jmp_buf g_errorJumpBuffer;
 const char* g_errorMsgs[] = {
 	"Success",
 	"",
-	"Could not allocate memory",
+	"Tokeniser could not allocate memory",
 	"Unterminated string",
 	"Unterminated escape sequence",
 	"Unknown escape sequence",
 	"",
+	"Parser could not allocate memory",
+	"Unterminated block statement",
+	"Internal error: not a block statement",
+	"Expected statement",
 };
 
 char GetErrorCategory(int error)
@@ -62,7 +66,9 @@ void LoadFile(const char* pfn)
 	}
 
 	Tokenise();
-	TokensDump();
+
+	//TokensDump();
+	Parse();
 
 	fclose(f);
 	g_file = NULL;

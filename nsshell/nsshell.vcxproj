@@ -141,11 +141,13 @@
   <ItemGroup>
     <ClCompile Include="main.c" />
     <ClCompile Include="nanoshell.c" />
+    <ClCompile Include="parser.c" />
     <ClCompile Include="shell.c" />
     <ClCompile Include="tokeniser.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanoshell.h" />
+    <ClInclude Include="parser.h" />
     <ClInclude Include="shell.h" />
     <ClInclude Include="tokeniser.h" />
   </ItemGroup>

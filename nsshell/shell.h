@@ -1,5 +1,13 @@
 #pragma once
 
+#include <stdlib.h>
+#include <stdbool.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+
 enum eErrorCode
 {
 	ERROR_NONE,
@@ -13,16 +21,13 @@ enum eErrorCode
 
 	// parser errors
 	ERROR_PARSER_START,
+	ERROR_P_MEMORY_ALLOC_FAILURE,
+	ERROR_UNTERMINATED_BLOCK_STMT,
+	ERROR_INTERNAL_NOT_A_BLOCK_STMT,
+	ERROR_EXPECTED_STATEMENT,
 
 	ERROR_END,
 };
-
-#include <stdbool.h>
-#include <setjmp.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
 
 void LoadFile(const char* pfn);
 
