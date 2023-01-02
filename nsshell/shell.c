@@ -22,6 +22,7 @@ const char* g_errorMsgs[] = {
 	"Expected ')'",
 	"Expected ';'",
 	"Expected 'then'",
+	"Expected 'do'",
 	"Expected '{'",
 	"Expected '}'",
 	"Expected ';' or arguments",

@@ -15,12 +15,15 @@ const char* const gCommonTokens[] =
 	";",
 	"{",
 	"}",
-	"if",
-	"then",
 	"(",
 	")",
 	",",
+	"if",
+	"then",
 	"else",
+	"while",
+	"do",
+	"finally",
 };
 
 enum eCommonToken
@@ -29,12 +32,15 @@ enum eCommonToken
 	TK_SEMICOLON,
 	TK_OPENBLOCK,
 	TK_CLOSEBLOCK,
-	TK_IF,
-	TK_THEN,
 	TK_OPENPAREN,
 	TK_CLOSEPAREN,
 	TK_COMMA,
+	TK_IF,
+	TK_THEN,
 	TK_ELSE,
+	TK_WHILE,
+	TK_DO,
+	TK_FINALLY,
 	TK_END,
 };
 
@@ -283,6 +289,41 @@ Statement* ParseIfStatement()
 	return pIfStmt;
 }
 
+Statement* ParseWhileStatement()
+{
+	ConsumeToken();
+
+	Statement* pIfStmt = ParserSetupIfStatement();
+	pIfStmt->type = STMT_WHILE;
+
+	// get the condition
+	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
+
+	char* token;
+
+	token = PeekToken();
+	if (!IS(token, TK_DO))
+	{
+		ParserOnError(ERROR_EXPECTED_DO);
+	}
+
+	ConsumeToken();
+
+	pIfStmt->m_if_data->m_true_part = ParseGenericStatement();
+
+	token = PeekToken();
+	if (!IS(token, TK_FINALLY))
+	{
+		return pIfStmt;
+	}
+
+	ConsumeToken();
+
+	pIfStmt->m_if_data->m_false_part = ParseGenericStatement();
+
+	return pIfStmt;
+}
+
 Statement* ParseEmptyStatement()
 {
 	ConsumeToken();
@@ -306,24 +347,15 @@ Statement* ParseGenericStatement()
 	Statement* pStmt = NULL;
 
 	if (IS(tk, TK_SEMICOLON))
-	{
-		// This is the 'null' statement. Do nothing, and consume it.
 		pStmt = ParseEmptyStatement();
-	}
 	else if (IS(tk, TK_OPENBLOCK))
-	{
-		// This is an 'if' statement.
 		pStmt = ParseBlockStatement();
-	}
 	else if (IS(tk, TK_IF))
-	{
-		// This is an 'if' statement.
 		pStmt = ParseIfStatement();
-	}
+	else if (IS(tk, TK_WHILE))
+		pStmt = ParseWhileStatement();
 	else
-	{
 		pStmt = ParseCommandStatement(false);
-	}
 
 	return pStmt;
 }
@@ -370,6 +402,7 @@ static const char* const g_ts[] =
 	"STMT_COMMAND",
 	"STMT_BLOCK",
 	"STMT_IF",
+	"STMT_WHILE",
 };
 
 const char* GetTypeString(eStatementType type)
@@ -415,6 +448,7 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 			break;
 		}
 		case STMT_IF:
+		case STMT_WHILE:
 		{
 			LogMsg("");
 			PadLineTo(padding); LogMsg("Condition: ");

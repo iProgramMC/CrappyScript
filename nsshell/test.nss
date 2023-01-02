@@ -12,6 +12,12 @@
 		} else {
 			hellno;
 		}
+		
+		while yes do {
+			call(funny);
+		} finally {
+			haha();
+		}
 	
 		argcall;
 		

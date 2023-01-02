@@ -6,11 +6,13 @@ typedef enum
 	STMT_COMMAND,
 	STMT_BLOCK,
 	STMT_IF,
+	STMT_WHILE,
 }
 eStatementType;
 
 typedef struct STATEMENT Statement;
 
+// note: Also applies to other structures, such as 'while'
 typedef struct
 {
 	Statement* m_condition;
