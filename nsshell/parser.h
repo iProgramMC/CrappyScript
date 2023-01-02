@@ -14,14 +14,9 @@ typedef struct STATEMENT Statement;
 typedef struct
 {
 	Statement* m_condition;
-	size_t     m_condition_size;
-
 	Statement* m_true_part;
-	size_t     m_true_part_size;
-
 	// if there's an 'else', this will be active and not NULL
 	Statement* m_false_part;
-	size_t     m_false_part_size;
 }
 StatementIfData;
 

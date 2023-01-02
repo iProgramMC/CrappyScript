@@ -19,6 +19,8 @@ const char* const gCommonTokens[] =
 	"then",
 	"(",
 	")",
+	",",
+	"else",
 };
 
 enum eCommonToken
@@ -32,8 +34,12 @@ enum eCommonToken
 	TK_OPENPAREN,
 	TK_CLOSEPAREN,
 	TK_COMMA,
+	TK_ELSE,
 	TK_END,
 };
+
+Statement* ParseBlockStatement();
+Statement* ParseGenericStatement();
 
 int GetCommonTokenType(const char* token)
 {
@@ -105,6 +111,23 @@ Statement* ParserSetupCommandStatement()
 	return pStmt;
 }
 
+Statement* ParserSetupIfStatement()
+{
+	Statement* pStmt = calloc(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_IF;
+
+	pStmt->m_if_data = calloc(1, sizeof(StatementIfData));
+	if (!pStmt->m_if_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_if_data->m_condition = NULL;
+	pStmt->m_if_data->m_true_part = NULL;
+	pStmt->m_if_data->m_false_part = NULL;
+
+	return pStmt;
+}
+
 void ParserAddStmtToBlockStmt(Statement* pBlockStmt, Statement* pAddedStmt)
 {
 	if (pBlockStmt->type != STMT_BLOCK) ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
@@ -129,11 +152,6 @@ void ParserAddArgToCmdStmt(Statement* pCmdStmt, Statement* arg)
 	pCmdStmt->m_cmd_data->m_args[pCmdStmt->m_cmd_data->m_nargs++] = arg;
 }
 
-Statement* ParseIfStatement()
-{
-	return NULL;
-}
-
 Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 {
 	char* token = ConsumeToken();
@@ -156,8 +174,23 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 		// If we're starting to close up..
 		if (!IS(token, TK_CLOSEPAREN))
 		{
-			if (!bCanExpectSemicolon || !IS(token, TK_SEMICOLON))
-				ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
+			if (IS(token, TK_COMMA))
+			{
+				if (bCanExpectSemicolon)
+					ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
+				else
+					return pCmdStmt;
+			}
+			
+			if (IS(token, TK_SEMICOLON))
+			{
+				if (!bCanExpectSemicolon)
+					ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
+				else
+					return pCmdStmt;
+			}
+
+			return pCmdStmt;
 		}
 		else
 		{
@@ -168,6 +201,14 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 	{
 		ConsumeToken();
 
+		token = PeekToken();
+
+		if (IS(token, TK_CLOSEPAREN))
+		{
+			ConsumeToken();
+			return pCmdStmt;
+		}
+
 		// Parse the arguments
 		while (true)
 		{
@@ -176,17 +217,21 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 			if (!token)
 				ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
 
-			if (IS(token, TK_CLOSEPAREN))
-			{
-				ConsumeToken();
-				break;
-			}
-
 			Statement* pSubArg = ParseCommandStatementInside(false);
 
 			ParserAddArgToCmdStmt(pCmdStmt, pSubArg);
 
-			LogMsgNoCr("");
+			// check if we have a comma
+			token = PeekToken();
+			if (IS(token, TK_COMMA))
+			{
+				ConsumeToken();
+			}
+			else if (IS(token, TK_CLOSEPAREN))
+			{
+				ConsumeToken();
+				break;
+			}
 		}
 	}
 
@@ -202,6 +247,40 @@ Statement* ParseCommandStatement()
 	if (!IS(token, TK_SEMICOLON)) ParserOnError(ERROR_EXPECTED_SEMICOLON);
 
 	return pStmt;
+}
+
+Statement* ParseIfStatement()
+{
+	ConsumeToken();
+
+	Statement* pIfStmt = ParserSetupIfStatement();
+
+	// get the condition
+	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
+
+	char* token;
+
+	token = PeekToken();
+	if (!IS(token, TK_THEN))
+	{
+		ParserOnError(ERROR_EXPECTED_THEN);
+	}
+
+	ConsumeToken();
+
+	pIfStmt->m_if_data->m_true_part = ParseGenericStatement();
+
+	token = PeekToken();
+	if (!IS(token, TK_ELSE))
+	{
+		return pIfStmt;
+	}
+
+	ConsumeToken();
+
+	pIfStmt->m_if_data->m_false_part = ParseGenericStatement();
+
+	return pIfStmt;
 }
 
 Statement* ParseEmptyStatement()
@@ -220,7 +299,34 @@ Statement* ParseEmptyStatement()
 	return pStmt;
 }
 
-Statement* ParseBlockStatement();
+Statement* ParseGenericStatement()
+{
+	char* tk = PeekToken();
+
+	Statement* pStmt = NULL;
+
+	if (IS(tk, TK_SEMICOLON))
+	{
+		// This is the 'null' statement. Do nothing, and consume it.
+		pStmt = ParseEmptyStatement();
+	}
+	else if (IS(tk, TK_OPENBLOCK))
+	{
+		// This is an 'if' statement.
+		pStmt = ParseBlockStatement();
+	}
+	else if (IS(tk, TK_IF))
+	{
+		// This is an 'if' statement.
+		pStmt = ParseIfStatement();
+	}
+	else
+	{
+		pStmt = ParseCommandStatement(false);
+	}
+
+	return pStmt;
+}
 
 void ParseBlockStatementInside(Statement* pBlockStmt)
 {
@@ -228,25 +334,7 @@ void ParseBlockStatementInside(Statement* pBlockStmt)
 
 	while (tk && !IS(tk, TK_CLOSEBLOCK))
 	{
-		if (IS(tk, TK_SEMICOLON))
-		{
-			// This is the 'null' statement. Do nothing, and consume it.
-			ParserAddStmtToBlockStmt(pBlockStmt, ParseEmptyStatement());
-		}
-		else if (IS(tk, TK_OPENBLOCK))
-		{
-			// This is an 'if' statement.
-			ParserAddStmtToBlockStmt(pBlockStmt, ParseBlockStatement());
-		}
-		else if (IS(tk, TK_IF))
-		{
-			// This is an 'if' statement.
-			ParserAddStmtToBlockStmt(pBlockStmt, ParseIfStatement());
-		}
-		else
-		{
-			ParserAddStmtToBlockStmt(pBlockStmt, ParseCommandStatement(false));
-		}
+		ParserAddStmtToBlockStmt(pBlockStmt, ParseGenericStatement());
 
 		tk = PeekToken();
 	}
@@ -293,6 +381,12 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 {
 	PadLineTo(padding);
 
+	if (!pStmt)
+	{
+		LogMsg("NULL statement");
+		return;
+	}
+
 	LogMsgNoCr("Statement %p. Type %s", pStmt, GetTypeString(pStmt->type));
 
 	switch (pStmt->type)
@@ -319,6 +413,18 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 				ParserDumpStatement(pStmtSub, padding + 4);
 			}
 			break;
+		}
+		case STMT_IF:
+		{
+			LogMsg("");
+			PadLineTo(padding); LogMsg("Condition: ");
+			ParserDumpStatement(pStmt->m_if_data->m_condition, padding + 4);
+
+			PadLineTo(padding); LogMsg("True branch: ");
+			ParserDumpStatement(pStmt->m_if_data->m_true_part, padding + 4);
+
+			PadLineTo(padding); LogMsg("False branch: ");
+			ParserDumpStatement(pStmt->m_if_data->m_false_part, padding + 4);
 		}
 		default:
 		{
