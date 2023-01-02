@@ -7,6 +7,7 @@ typedef enum
 	STMT_BLOCK,
 	STMT_IF,
 	STMT_WHILE,
+	STMT_STRING,
 }
 eStatementType;
 
@@ -37,6 +38,12 @@ typedef struct
 }
 StatementBlkData;
 
+typedef struct
+{
+	char* m_str;
+}
+StatementStrData;
+
 typedef struct STATEMENT
 {
 	eStatementType type;
@@ -47,6 +54,7 @@ typedef struct STATEMENT
 		StatementIfData* m_if_data;
 		StatementBlkData* m_blk_data;
 		StatementCmdData* m_cmd_data;
+		StatementStrData* m_str_data;
 	};
 }
 Statement;

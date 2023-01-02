@@ -5,9 +5,24 @@
 extern jmp_buf g_errorJumpBuffer;
 extern FILE* g_file;
 
-const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
+//const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
 
-char** tokens = NULL;
+// note: this must match the order in the enum eToken from TK_SYMBOL_START
+const char* g_singleSymbolTokens = ";{}(),";
+
+// note: this must match the exact order in the enum eToken from TK_KEYWORD_START
+const char* gKeywordKeys[] =
+{
+	"",
+	"if",
+	"then",
+	"else",
+	"while",
+	"do",
+	"finally",
+};
+
+Token** tokens = NULL;
 size_t ntokens = 0;
 
 NORETURN void TokenOnError(int error)
@@ -40,21 +55,59 @@ void TokenAppend(char** token, size_t* sz, char chr)
 
 // same with this. TODO reduce the number of reallocs for TokenAdd and TokenAppend
 
-// note: this must take a malloc'ed buffer
-void TokenAdd(char* token)
-{
-	if (!token) return;
+// note: this must take a malloc'ed buffer, or NULL
 
-	char** newTokens = realloc(tokens, sizeof(char*) * (ntokens + 1));
-	if (!newTokens)
-	{
-		TokenOnError(ERROR_MEMORY_ALLOC_FAILURE);
+void TokenAdd(int type, char* data)
+{
+	// don't add at all if it's an empty key word
+	if (type == TK_KEYWORD_START && data == NULL)
 		return;
-	}
+
+	Token** newTokens = realloc(tokens, sizeof(Token*) * (ntokens + 1));
+	if (!newTokens) TokenOnError(ERROR_MEMORY_ALLOC_FAILURE);
 
 	tokens = newTokens;
 
-	tokens[ntokens++] = token;
+	Token* pToken = calloc(1, sizeof(Token));
+	if (!pToken) TokenOnError(ERROR_MEMORY_ALLOC_FAILURE);
+
+	tokens[ntokens++] = pToken;
+
+	pToken->m_type = type;
+	pToken->m_data = data;
+
+	// determine the type
+	if (type == TK_SYMBOL_START)
+	{
+		pToken->m_data = NULL;
+
+		switch (*data)
+		{
+			case ';': pToken->m_type = TK_SEMICOLON;  break;
+			case '{': pToken->m_type = TK_OPENBLOCK;  break;
+			case '}': pToken->m_type = TK_CLOSEBLOCK; break;
+			case '(': pToken->m_type = TK_OPENPAREN;  break;
+			case ')': pToken->m_type = TK_CLOSEPAREN; break;
+			case ',': pToken->m_type = TK_COMMA;      break;
+			default: TokenOnError(ERROR_INTERNAL_UNKNOWN_SYMBOL_TOKEN);
+		}
+
+		free(data);
+	}
+
+	if (type == TK_KEYWORD_START)
+	{
+		for (int i = TK_KEYWORD_START; i < TK_KEYWORD_END; i++)
+		{
+			if (strcmp(pToken->m_data, gKeywordKeys[i - TK_KEYWORD_START]) == 0)
+			{
+				free(pToken->m_data);
+				pToken->m_type = i;
+				pToken->m_data = NULL;
+				break;
+			}
+		}
+	}
 }
 
 void Tokenise()
@@ -73,7 +126,7 @@ void Tokenise()
 		if (isspace(c) || iscntrl(c))
 		{
 			// push the current token, if there is one
-			TokenAdd(currentToken);
+			TokenAdd(TK_KEYWORD_START, currentToken);
 			currentToken = NULL;
 			currentTokenSize = 0;
 			continue;
@@ -84,7 +137,7 @@ void Tokenise()
 		if (match != NULL)
 		{
 			// push the current token, if there is one
-			TokenAdd(currentToken);
+			TokenAdd(TK_KEYWORD_START, currentToken);
 			currentToken = NULL;
 			currentTokenSize = 0;
 
@@ -92,7 +145,7 @@ void Tokenise()
 			currentToken = malloc(2);
 			currentToken[0] = c;
 			currentToken[1] = 0;
-			TokenAdd(currentToken);
+			TokenAdd(TK_SYMBOL_START, currentToken);
 			currentToken = NULL;
 			continue;
 		}
@@ -101,7 +154,7 @@ void Tokenise()
 		if (c == '"')
 		{
 			// push the current token, if there is one
-			TokenAdd(currentToken);
+			TokenAdd(TK_KEYWORD_START, currentToken);
 			currentToken = NULL;
 			currentTokenSize = 0;
 
@@ -117,7 +170,7 @@ void Tokenise()
 				if (c == '"')
 				{
 					//well, we're done
-					TokenAdd(currentToken);
+					TokenAdd(TK_STRING, currentToken);
 					currentToken = NULL;
 					currentTokenSize = 0;
 					break;

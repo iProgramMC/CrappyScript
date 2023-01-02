@@ -9,58 +9,13 @@ NORETURN void ParserOnError(int error)
 	longjmp(g_errorJumpBuffer, error);
 }
 
-const char* const gCommonTokens[] =
-{
-	"",
-	";",
-	"{",
-	"}",
-	"(",
-	")",
-	",",
-	"if",
-	"then",
-	"else",
-	"while",
-	"do",
-	"finally",
-};
-
-enum eCommonToken
-{
-	TK_NOT_COMMON,
-	TK_SEMICOLON,
-	TK_OPENBLOCK,
-	TK_CLOSEBLOCK,
-	TK_OPENPAREN,
-	TK_CLOSEPAREN,
-	TK_COMMA,
-	TK_IF,
-	TK_THEN,
-	TK_ELSE,
-	TK_WHILE,
-	TK_DO,
-	TK_FINALLY,
-	TK_END,
-};
-
 Statement* ParseBlockStatement();
 Statement* ParseGenericStatement();
+Statement* ParseStringStatement();
 
-int GetCommonTokenType(const char* token)
-{
-	for (int i = TK_NOT_COMMON + 1; i < TK_END; i++)
-	{
-		if (strcmp(token, gCommonTokens[i]) == 0)
-			return i;
-	}
+#define IS(token, type) (token->m_type == type)
 
-	return TK_NOT_COMMON;
-}
-
-#define IS(token, type) (GetCommonTokenType(token) == type)
-
-extern char** tokens;
+extern Token** tokens;
 extern size_t ntokens;
 
 Statement * g_mainBlock;
@@ -72,13 +27,13 @@ bool ParserEndOfFile()
 	return g_currentToken >= ntokens;
 }
 
-char* PeekToken()
+Token* PeekToken()
 {
 	if (ParserEndOfFile()) return NULL;
 	return tokens[g_currentToken];
 }
 
-char* ConsumeToken()
+Token* ConsumeToken()
 {
 	if (ParserEndOfFile()) return NULL;
 	return tokens[g_currentToken++];
@@ -134,6 +89,21 @@ Statement* ParserSetupIfStatement()
 	return pStmt;
 }
 
+Statement* ParserSetupStringStatement()
+{
+	Statement* pStmt = calloc(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_STRING;
+
+	pStmt->m_str_data = calloc(1, sizeof(StatementStrData));
+	if (!pStmt->m_str_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_str_data->m_str = "";
+
+	return pStmt;
+}
+
 void ParserAddStmtToBlockStmt(Statement* pBlockStmt, Statement* pAddedStmt)
 {
 	if (pBlockStmt->type != STMT_BLOCK) ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
@@ -160,16 +130,21 @@ void ParserAddArgToCmdStmt(Statement* pCmdStmt, Statement* arg)
 
 Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 {
-	char* token = ConsumeToken();
+	Token* token = PeekToken();
 	if (token == NULL)
 	{
 		ParserOnError(ERROR_EXPECTED_STATEMENT);
 		return NULL;
 	}
 
+	if (IS(token, TK_STRING))
+		return ParseStringStatement();
+
+	ConsumeToken();
+
 	Statement* pCmdStmt = ParserSetupCommandStatement();
 
-	pCmdStmt->m_cmd_data->m_name = token;
+	pCmdStmt->m_cmd_data->m_name = token->m_data;
 
 	token = PeekToken();
 
@@ -248,7 +223,7 @@ Statement* ParseCommandStatement()
 {
 	Statement* pStmt = ParseCommandStatementInside(true);
 
-	char* token = ConsumeToken();
+	Token* token = ConsumeToken();
 	if (!token) ParserOnError(ERROR_EXPECTED_SEMICOLON);
 	if (!IS(token, TK_SEMICOLON)) ParserOnError(ERROR_EXPECTED_SEMICOLON);
 
@@ -264,7 +239,7 @@ Statement* ParseIfStatement()
 	// get the condition
 	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
 
-	char* token;
+	Token* token;
 
 	token = PeekToken();
 	if (!IS(token, TK_THEN))
@@ -299,7 +274,7 @@ Statement* ParseWhileStatement()
 	// get the condition
 	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
 
-	char* token;
+	Token* token;
 
 	token = PeekToken();
 	if (!IS(token, TK_DO))
@@ -340,9 +315,23 @@ Statement* ParseEmptyStatement()
 	return pStmt;
 }
 
+Statement* ParseStringStatement()
+{
+	Statement* pStmt = ParserSetupStringStatement();
+
+	if (!PeekToken())
+	{
+		ParserOnError(ERROR_EXPECTED_STRING);
+	}
+
+	pStmt->m_str_data->m_str = ConsumeToken()->m_data;
+
+	return pStmt;
+}
+
 Statement* ParseGenericStatement()
 {
-	char* tk = PeekToken();
+	Token* tk = PeekToken();
 
 	Statement* pStmt = NULL;
 
@@ -354,6 +343,8 @@ Statement* ParseGenericStatement()
 		pStmt = ParseIfStatement();
 	else if (IS(tk, TK_WHILE))
 		pStmt = ParseWhileStatement();
+	else if (IS(tk, TK_STRING))
+		pStmt = ParseStringStatement();
 	else
 		pStmt = ParseCommandStatement(false);
 
@@ -362,7 +353,7 @@ Statement* ParseGenericStatement()
 
 void ParseBlockStatementInside(Statement* pBlockStmt)
 {
-	char* tk = PeekToken();
+	Token* tk = PeekToken();
 
 	while (tk && !IS(tk, TK_CLOSEBLOCK))
 	{
@@ -403,6 +394,7 @@ static const char* const g_ts[] =
 	"STMT_BLOCK",
 	"STMT_IF",
 	"STMT_WHILE",
+	"STMT_STRING",
 };
 
 const char* GetTypeString(eStatementType type)
@@ -445,6 +437,12 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 
 				ParserDumpStatement(pStmtSub, padding + 4);
 			}
+			break;
+		}
+		case STMT_STRING:
+		{
+			LogMsg("   Contents: '%s'", pStmt->m_str_data->m_str);
+
 			break;
 		}
 		case STMT_IF:

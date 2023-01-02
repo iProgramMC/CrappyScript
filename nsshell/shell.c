@@ -11,6 +11,8 @@ const char* g_errorMsgs[] = {
 	"Unterminated string",
 	"Unterminated escape sequence",
 	"Unknown escape sequence",
+	"Internal error: unknown symbol token",
+	"Internal error: unknown keyword token",
 	"",
 	"Parser could not allocate memory",
 	"Unterminated block statement",
@@ -27,6 +29,7 @@ const char* g_errorMsgs[] = {
 	"Expected '}'",
 	"Expected ';' or arguments",
 	"Expected ')' or arguments",
+	"Expected string",
 };
 
 char GetErrorCategory(int error)
