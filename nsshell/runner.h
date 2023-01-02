@@ -2,7 +2,7 @@
 
 #include "parser.h"
 
-#define C_MAX_ARGS (128)
+#define C_MAX_ARGS (64)
 #define C_MAX_BUILTIN_ARGS (8)
 
 typedef enum

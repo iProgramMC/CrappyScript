@@ -118,6 +118,18 @@ void TokenAdd(int type, char* data)
 	}
 }
 
+bool IsSpaceSafe(char c)
+{
+	if (c < -1 || c > 255) return false;
+	return isspace(c);
+}
+
+bool IsControlSafe(char c)
+{
+	if (c < -1 || c > 255) return false;
+	return iscntrl(c);
+}
+
 void Tokenise()
 {
 	char* currentToken = NULL;
@@ -143,7 +155,7 @@ void Tokenise()
 		}
 
 		// if this is white space
-		if (isspace(c) || iscntrl(c))
+		if (IsSpaceSafe(c) || IsControlSafe(c))
 		{
 			// push the current token, if there is one
 			TokenAdd(TK_KEYWORD_START, currentToken);

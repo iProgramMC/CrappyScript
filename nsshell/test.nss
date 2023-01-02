@@ -46,7 +46,7 @@ test;
 
 echo(test());
 
-testing;
-testing;
+testing();
+testing();
 
 # A comment here.
