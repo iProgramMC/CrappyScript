@@ -80,5 +80,6 @@ typedef struct STATEMENT
 Statement;
 
 void Parse();
+void ParserTeardown();
 
 

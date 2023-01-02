@@ -219,10 +219,23 @@ void Tokenise()
 	}
 }
 
-void TokensDump()
+void TokenDump()
 {
 	for (size_t i = 0; i < ntokens; i++)
 	{
 		LogMsg("TOKEN: '%s'", tokens[i]);
 	}
 }
+
+void TokenTeardown()
+{
+	for (size_t i = 0; i < ntokens; i++)
+	{
+		MemFree(tokens[i]->m_data);
+		MemFree(tokens[i]);
+	}
+	MemFree(tokens);
+	tokens = NULL;
+	ntokens = 0;
+}
+

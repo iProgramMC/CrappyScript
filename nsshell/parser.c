@@ -190,7 +190,7 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 
 	Statement* pCmdStmt = ParserSetupCommandStatement();
 
-	pCmdStmt->m_cmd_data->m_name = token->m_data;
+	pCmdStmt->m_cmd_data->m_name = StrDuplicate(token->m_data);
 
 	token = PeekToken();
 
@@ -380,7 +380,7 @@ Statement* ParseStringStatement()
 		ParserOnError(ERROR_EXPECTED_STRING);
 	}
 
-	pStmt->m_str_data->m_str = ConsumeToken()->m_data;
+	pStmt->m_str_data->m_str = StrDuplicate(ConsumeToken()->m_data);
 
 	return pStmt;
 }
@@ -399,7 +399,7 @@ Statement* ParseFunctionStatement()
 	if (!IS(token, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_FUNCTION_NAME);
 
 	Statement* pFunction = ParserSetupFunctionStatement();
-	pFunction->m_fun_data->m_name = token->m_data;
+	pFunction->m_fun_data->m_name = StrDuplicate(token->m_data);
 
 	// Consume the name token.
 	ConsumeToken();
@@ -419,7 +419,7 @@ Statement* ParseFunctionStatement()
 			if (!token) ParserOnError(ERROR_UNTERMINATED_FUNCTION_DECL);
 			if (!IS(token, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_ARGUMENTS);
 
-			ParserAddArgToFunStmt(pFunction, token->m_data);
+			ParserAddArgToFunStmt(pFunction, StrDuplicate(token->m_data));
 
 			ConsumeToken();
 
@@ -461,7 +461,7 @@ Statement* ParseLetStatement()
 
 	Statement* pVarStmt = ParserSetupVariableStatement();
 
-	pVarStmt->m_var_data->m_name = tk->m_data;
+	pVarStmt->m_var_data->m_name = StrDuplicate(tk->m_data);
 
 	// Check the next token. If it's an equals sign, that means afterwards there will be a new statement.
 	tk = PeekToken();
@@ -646,6 +646,71 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 	}
 }
 
+void ParserFreeStatement(Statement* pStatement)
+{
+	if (!pStatement) return;
+
+	switch (pStatement->type)
+	{
+		case STMT_NULL: break;
+		case STMT_STRING:
+		{
+			MemFree(pStatement->m_str_data->m_str);
+			break;
+		}
+		case STMT_COMMAND:
+		{
+			MemFree(pStatement->m_cmd_data->m_name);
+
+			for (size_t i = 0; i < pStatement->m_cmd_data->m_nargs; i++)
+			{
+				ParserFreeStatement(pStatement->m_cmd_data->m_args[i]);
+			}
+
+			MemFree(pStatement->m_cmd_data->m_args);
+			break;
+		}
+		case STMT_BLOCK:
+		{
+			for (size_t i = 0; i < pStatement->m_blk_data->m_nstatements; i++)
+			{
+				ParserFreeStatement(pStatement->m_blk_data->m_statements[i]);
+			}
+
+			MemFree(pStatement->m_blk_data->m_statements);
+			break;
+		}
+		case STMT_FUNCTION:
+		{
+			for (size_t i = 0; i < pStatement->m_fun_data->m_nargs; i++)
+			{
+				MemFree(pStatement->m_fun_data->m_args[i]);
+			}
+
+			ParserFreeStatement(pStatement->m_fun_data->m_statement);
+			MemFree(pStatement->m_fun_data->m_name);
+			break;
+		}
+		case STMT_VARIABLE:
+		{
+			ParserFreeStatement(pStatement->m_var_data->m_statement);
+			MemFree(pStatement->m_var_data->m_name);
+			break;
+		}
+		case STMT_IF:
+		case STMT_WHILE:
+		{
+			ParserFreeStatement(pStatement->m_if_data->m_condition);
+			ParserFreeStatement(pStatement->m_if_data->m_true_part);
+			ParserFreeStatement(pStatement->m_if_data->m_false_part);
+			break;
+		}
+	}
+
+	MemFree(pStatement->m_data);
+	MemFree(pStatement);
+}
+
 void Parse()
 {
 	g_currentToken = 0;
@@ -654,7 +719,13 @@ void Parse()
 
 	ParseBlockStatementInside(g_mainBlock);
 
-
 	// dump the main block
-	ParserDumpStatement(g_mainBlock, 0);
+	//ParserDumpStatement(g_mainBlock, 0);
+}
+
+void ParserTeardown()
+{
+	ParserFreeStatement(g_mainBlock);
+
+	g_mainBlock = NULL;
 }

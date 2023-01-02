@@ -106,16 +106,10 @@ void LoadFile(const char* pfn)
 	}
 
 	Tokenise();
-
-	//TokensDump();
 	Parse();
-
-	MemDebugPrint();
-
-	LogMsg("Running.....\n\n");
-
 	RunnerGo();
-
+	TokenTeardown();
+	ParserTeardown();
 	MemDebugPrint();
 
 	fclose(f);

@@ -44,4 +44,5 @@ typedef struct Token
 Token;
 
 void Tokenise();
-void TokensDump();
+void TokenDump();
+void TokenTeardown();

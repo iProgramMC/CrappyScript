@@ -52,8 +52,9 @@ static void RemoveAllocation(int allocindex)
 {
 	memmove(&g_allocations[allocindex], &g_allocations[allocindex + 1], sizeof(Allocation) * (g_nAllocations - allocindex - 1));
 	g_allocations = realloc(g_allocations, sizeof(Allocation) * (g_nAllocations - 1));
-	if (!g_allocations) abort();
 	g_nAllocations--;
+	//if we should have allocations but we don't, abort
+	if (!g_allocations && g_nAllocations) abort();
 }
 
 void* MemAllocateD(size_t sz, const char* file, int line)
