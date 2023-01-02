@@ -152,7 +152,7 @@ void RunnerAddFunctionVariable(Statement* statement, const char* fname)
 	pFunc->m_args = NULL; // this only applies to statement-functions
 	if (statement)
 	{
-		pFunc->m_pContents = RunStatement(statement, 0, NULL);
+		pFunc->m_pContents = RunStatement(statement);
 	}
 	else
 	{
@@ -223,7 +223,7 @@ char* RunStatement(Statement* pStatement)
 				}
 			}
 
-			RunnerAddFunctionStatement(pData->m_statement, pData->m_name, pData->m_nargs, pData->m_args, true);
+			RunnerAddFunctionStatement(pData->m_statement, pData->m_name, (int)pData->m_nargs, pData->m_args, true);
 
 			break;
 		}
@@ -266,7 +266,7 @@ char* RunStatement(Statement* pStatement)
 		}
 		case STMT_STRING:
 		{
-			return strdup(pStatement->m_str_data->m_str);
+			return StrDuplicate(pStatement->m_str_data->m_str);
 		}
 		case STMT_COMMAND:
 		{
@@ -316,7 +316,7 @@ char* RunStatement(Statement* pStatement)
 					RunnerOnError(ERROR_SPECIFIED_ARGUMENTS);
 				}
 
-				return strdup(pFunc->m_pContents);
+				return StrDuplicate(pFunc->m_pContents);
 			}
 
 			// If the command's argument calls don't match..

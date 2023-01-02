@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # My notes - iProgramInCpp
 notes.txt
 
+nsshell/build
+nsshell/nsshell
+

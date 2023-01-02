@@ -2,7 +2,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 // This allocator is designed to track allocations for memory leaks. Quick and dirty, not very performant.
 
@@ -21,26 +25,30 @@ void DebugLogMsg(const char* fmt, ...)
 {
 	va_list lst;
 	va_start(lst, fmt);
-	char buffer[16384];
+	char buffer[1024];
 	vsnprintf(buffer, sizeof buffer, fmt, lst);
 
+#ifdef _WIN32
 	OutputDebugStringA(buffer);
 	OutputDebugStringA("\n");
+#else
+	printf("%s\n", buffer);
+#endif
 
 	va_end(lst);
 }
 
 static void AddAllocation(Allocation* allocation)
 {
-	g_allocations = realloc(g_allocations, (g_nAllocations + 1) * sizeof(Allocation));
-	if (!g_allocations) abort();
-
+	Allocation* allocs = realloc(g_allocations, (g_nAllocations + 1) * sizeof(Allocation));
+	if (!allocs) abort();
+	g_allocations = allocs;
 	memcpy(&g_allocations[g_nAllocations++], allocation, sizeof *allocation);
 }
 
 static int LookUpAllocation(void* ptr)
 {
-	for (size_t i = 0; i < g_nAllocations; i++)
+	for (int i = 0; i < (int)g_nAllocations; i++)
 	{
 		if (g_allocations[i].ptr == ptr)
 			return i;
@@ -97,7 +105,7 @@ void* MemReAllocateD(void* oldptr, size_t newsize, const char* file, int line)
 	int areaindex = LookUpAllocation(oldptr);
 	if (areaindex < 0)
 	{
-		LogMsg("FATAL ERROR: realloc - OldPtr %p isn't part of the allocation system", oldptr);
+		DebugLogMsg("FATAL ERROR: realloc - OldPtr %p isn't part of the allocation system", oldptr);
 		MemDebugPrint();
 		abort();
 	}
@@ -122,7 +130,7 @@ void MemFree(void* ptr)
 	int areaindex = LookUpAllocation(ptr);
 	if (areaindex < 0)
 	{
-		LogMsg("FATAL ERROR: free - ptr %p isn't part of the allocation system", ptr);
+		DebugLogMsg("FATAL ERROR: free - ptr %p isn't part of the allocation system", ptr);
 		abort();
 	}
 
