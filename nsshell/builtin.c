@@ -16,25 +16,27 @@ Variant* BuiltInHelp()
 {
 	LogMsg("CrappyScript Help");
 	LogMsg("\nBuilt-in functions:");
-	LogMsg("help()      - Shows this list");
-	LogMsg("ver()       - Shows the script version");
-	LogMsg("getver()    - Returns the script version as a string");
-	LogMsg("echo()      - Prints a string or integer and a new line");
-	LogMsg("equals(a,b) - Checks if two objects are equal in value");
-	LogMsg("concat(a,b) - Concatenates two strings and returns a string");
-	LogMsg("str(a)      - Converts any object into its string representation");
-	LogMsg("int(a)      - Converts any object into its integer representation if it can");
-	LogMsg("add(a,b)    - Adds two numbers");
-	LogMsg("sub(a,b)    - Subtracts two numbers");
-	LogMsg("mul(a,b)    - Multiplies two numbers");
-	LogMsg("div(a,b)    - Divides two numbers");
-	LogMsg("and(a,b)    - Performs a binary AND on two numbers");
-	LogMsg("or(a,b)     - Performs a binary OR on two numbers");
-	LogMsg("lt(a,b)     - Returns 1 if A is less than B, 0 otherwise");
-	LogMsg("gt(a,b)     - Returns 1 if A is more than B, 0 otherwise");
-	LogMsg("argc        - Returns the number of arguments passed into the script");
-	LogMsg("args(a)     - Returns the a'th (zero-indexed) argument.");
-	LogMsg("arg ## a    - Returns the a'th (zero-indexed) argument.");
+	LogMsg("help()        - Shows this list");
+	LogMsg("ver()         - Shows the script version");
+	LogMsg("getver()      - Returns the script version as a string");
+	LogMsg("echo()        - Prints a string or integer and a new line");
+	LogMsg("equals(a,b)   - Checks if two objects are equal in value");
+	LogMsg("concat(a,b)   - Concatenates two strings and returns a string");
+	LogMsg("str(a)        - Converts any object into its string representation");
+	LogMsg("int(a)        - Converts any object into its integer representation if it can");
+	LogMsg("add(a,b)      - Adds two numbers");
+	LogMsg("sub(a,b)      - Subtracts two numbers");
+	LogMsg("mul(a,b)      - Multiplies two numbers");
+	LogMsg("div(a,b)      - Divides two numbers");
+	LogMsg("and(a,b)      - Performs a binary AND on two numbers");
+	LogMsg("or(a,b)       - Performs a binary OR on two numbers");
+	LogMsg("lt(a,b)       - Returns 1 if A is less than B, 0 otherwise");
+	LogMsg("gt(a,b)       - Returns 1 if A is more than B, 0 otherwise");
+	LogMsg("substr(a,b,c) - Returns a substring part of the original string 'a', starting");
+	LogMsg("                at index 'b' with length 'c'.");
+	LogMsg("argc          - Returns the number of arguments passed into the script");
+	LogMsg("args(a)       - Returns the a'th (zero-indexed) argument.");
+	LogMsg("arg ## a      - Returns the a'th (zero-indexed) argument.");
 	LogMsg("\nLanguage constructions:");
 	LogMsg("\n* if <condition> then <statement> [else <statement>]");
 	LogMsg("   The usual 'if' statement. The condition statement must always return an");
@@ -236,6 +238,35 @@ Variant* BuiltInOr(Variant* var1, Variant* var2)
 	return VariantCreateInt(var1->m_intValue | var2->m_intValue);
 }
 
+Variant* BuiltInSubstr(Variant* str, Variant* start, Variant* length)
+{
+	if (str->m_type != VAR_STRING)
+		RunnerOnError(ERROR_EXPECTED_STRING_PARM);
+
+	if (start->m_type != VAR_INT || length->m_type != VAR_INT)
+		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	size_t strLen = strlen(str->m_strValue);
+
+	if (start->m_intValue < 0) RunnerOnError(ERROR_SUBSTRING_FAILURE);
+	if (start->m_intValue + length->m_intValue > strLen) RunnerOnError(ERROR_SUBSTRING_FAILURE);
+
+	char* strp = MemAllocate(length->m_intValue + 1);
+	memcpy(strp, str->m_strValue + start->m_intValue, length->m_intValue);
+	strp[length->m_intValue] = 0;
+
+	Variant* pVar = VariantCreateString(strp);
+	MemFree(strp);
+	return pVar;
+}
+
+Variant* BuiltInLength(Variant* str)
+{
+	if (str->m_type != VAR_STRING)
+		RunnerOnError(ERROR_EXPECTED_STRING_PARM);
+
+	return VariantCreateInt(strlen(str->m_strValue));
+}
 
 void RunnerAddStandardFunctions()
 {
@@ -248,6 +279,8 @@ void RunnerAddStandardFunctions()
 	RunnerAddFunctionPtr(BuiltInToString, "str",    1, true);
 	RunnerAddFunctionPtr(BuiltInToInt,    "int",    1, true);
 	RunnerAddFunctionPtr(BuiltInNull,     "null",   0, true);
+	RunnerAddFunctionPtr(BuiltInSubstr,   "substr", 3, true);
+	RunnerAddFunctionPtr(BuiltInLength,   "length", 1, true);
 
 	// Arithmetic operations
 	RunnerAddFunctionPtr(BuiltInAdd,      "add", 2, true);

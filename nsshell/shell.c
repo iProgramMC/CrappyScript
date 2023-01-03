@@ -74,6 +74,8 @@ const char* g_errorMsgs[] = {
 	"'while' statement expects 'int' condition",
 	"Cannot convert string value to int",
 	"Array index out of bounds",
+	"Division by zero",
+	"Substring out of bounds",
 };
 
 char GetErrorCategory(int error)
