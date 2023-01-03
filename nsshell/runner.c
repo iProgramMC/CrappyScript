@@ -409,6 +409,8 @@ void RunnerAddStandardFunctions()
 	RunnerAddFunctionPtr(BuiltInGetVer,  "getver", 0, true);
 	RunnerAddFunctionPtr(BuiltInEquals,  "equals", 2, true);
 	RunnerAddFunctionPtr(BuiltInConcat,  "concat", 2, true);
+	RunnerAddFunctionPtr(BuiltInToString,"str",    1, true);
+	RunnerAddFunctionPtr(BuiltInToInt,   "int",    1, true);
 }
 
 void RunnerGo()

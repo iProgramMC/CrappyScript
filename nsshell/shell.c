@@ -64,8 +64,12 @@ const char* g_errorMsgs[] = {
 	"Variable is already defined",
 	"Assignee is not a variable",
 	"Call stack overflow",
-	"Invalid parameter type. The correct type is 'string'.",
-	"Invalid parameter type. The correct type is 'int'.",
+	"Invalid parameter type. The correct type is 'string'",
+	"Invalid parameter type. The correct type is 'int'",
+	"Unknown variant type",
+	"'if' statement expects 'int' condition",
+	"'while' statement expects 'int' condition",
+	"Cannot convert string value to int",
 };
 
 char GetErrorCategory(int error)

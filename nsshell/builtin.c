@@ -1,7 +1,7 @@
 #include "nanoshell.h"
 #include "builtin.h"
 
-void RunnerOnError(int error);
+NORETURN void RunnerOnError(int error);
 
 Variant* BuiltInHelp()
 {
@@ -22,12 +22,18 @@ Variant* BuiltInGetVer()
 
 Variant* BuiltInEcho(Variant* str)
 {
-	if (str->m_type == VAR_INT)
-		LogMsg("%lld", str->m_intValue);
-	else if (str->m_type == VAR_STRING)
-		LogMsg("%s", str->m_strValue);
-	else
-		LogMsg("???");
+	switch (str->m_type)
+	{
+		case VAR_INT:
+			LogMsg("%lld", str->m_intValue);
+			break;
+		case VAR_STRING:
+			LogMsg("%s", str->m_strValue);
+			break;
+		default:
+			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+			break;
+	}
 	return NULL;
 }
 
@@ -50,6 +56,8 @@ Variant* BuiltInConcat(Variant* str1, Variant* str2)
 	size_t len1 = strlen(str1->m_strValue), len2 = strlen(str2->m_strValue);
 
 	char* cpy = MemAllocate(len1 + len2 + 1);
+	if (!cpy) RunnerOnError(ERROR_R_MEMORY_ALLOC_FAILURE);
+
 	memcpy(cpy,        str1->m_strValue, len1);
 	memcpy(cpy + len1, str2->m_strValue, len2 + 1);
 
@@ -57,4 +65,49 @@ Variant* BuiltInConcat(Variant* str1, Variant* str2)
 	MemFree(cpy);
 
 	return pVar;
+}
+
+Variant* BuiltInToString(Variant* var)
+{
+	switch (var->m_type)
+	{
+		case VAR_STRING:
+		{
+			return VariantDuplicate(var);
+		}
+		case VAR_INT:
+		{
+			char buffer[64];
+			snprintf(buffer, sizeof buffer, "%lld", var->m_intValue);
+			return VariantCreateString(buffer);
+		}
+		default:
+		{
+			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+		}
+	}
+}
+
+Variant* BuiltInToInt(Variant* var)
+{
+	switch (var->m_type)
+	{
+		case VAR_STRING:
+		{
+			errno = 0;
+			long long value = strtoll(var->m_strValue, NULL, 0);
+			if (errno != 0)
+				RunnerOnError(ERROR_INT_CONVERSION_FAILURE);
+
+			return VariantCreateInt(value);
+		}
+		case VAR_INT:
+		{
+			return VariantDuplicate(var);
+		}
+		default:
+		{
+			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+		}
+	}
 }
