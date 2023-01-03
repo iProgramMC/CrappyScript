@@ -1,5 +1,7 @@
 #include "nanoshell.h"
 #include "builtin.h"
+#include "runner.h"
+#include <errno.h>
 
 NORETURN void RunnerOnError(int error);
 
@@ -39,7 +41,7 @@ Variant* BuiltInEcho(Variant* str)
 
 Variant* BuiltInEquals(Variant* str1, Variant* str2)
 {
-	if (str1->m_type != str2->m_type) return;
+	if (str1->m_type != str2->m_type) return VariantCreateInt(0);
 
 	switch (str1->m_type)
 	{
