@@ -39,13 +39,17 @@ Variant* BuiltInEcho(Variant* str)
 
 Variant* BuiltInEquals(Variant* str1, Variant* str2)
 {
-	if (str1->m_type != VAR_STRING || str2->m_type != VAR_STRING)
-		RunnerOnError(ERROR_EXPECTED_STRING_PARM);
+	if (str1->m_type != str2->m_type) return;
 
-	if (strcmp(str1->m_strValue, str2->m_strValue) == 0)
-		return VariantCreateInt(1);
-	else
-		return VariantCreateInt(0);
+	switch (str1->m_type)
+	{
+		case VAR_INT:
+			return VariantCreateInt(str1->m_intValue == str2->m_intValue);
+		case VAR_STRING:
+			return VariantCreateInt(!strcmp(str1->m_strValue, str2->m_strValue));
+		default:
+			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+	}
 }
 
 Variant* BuiltInConcat(Variant* str1, Variant* str2)
