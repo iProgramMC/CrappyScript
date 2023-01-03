@@ -1,4 +1,4 @@
-// NanoShell Command Interpreter (C) 2023 iProgramInCpp
+// CrappyScript (C) 2023 iProgramInCpp
 
 #ifndef _NANOSHELL_H
 #define _NANOSHELL_H

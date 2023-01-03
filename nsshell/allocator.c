@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #include "allocator.h"
 
 #include <stdio.h>

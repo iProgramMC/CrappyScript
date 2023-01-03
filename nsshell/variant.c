@@ -1,4 +1,13 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #include "variant.h"
+
+Variant* VariantCreateNull()
+{
+	Variant* pVar = MemCAllocate(1, sizeof(Variant));
+	pVar->m_type = VAR_NULL;
+	return pVar;
+}
 
 Variant* VariantCreateInt(long long value)
 {
@@ -28,6 +37,8 @@ Variant* VariantDuplicate(Variant* pVar)
 			break;
 		case VAR_STRING:
 			pNewVar->m_strValue = StrDuplicate(pVar->m_strValue);
+			break;
+		case VAR_NULL:
 			break;
 		default:
 			assert("Don't know how to clone variant");

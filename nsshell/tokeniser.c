@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #include "nanoshell.h"
 #include "tokeniser.h"
 #include "shell.h"

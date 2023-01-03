@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #pragma once
 
 #include <stdint.h>

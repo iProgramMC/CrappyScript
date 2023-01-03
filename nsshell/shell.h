@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #pragma once
 
 #include <stdlib.h>
@@ -94,30 +96,6 @@ enum eErrorCode
 
 	ERROR_END,
 };
-/*
-void RunnerAddStandardFunctions()
-{
-	RunnerAddFunctionPtr(BuiltInHelp,     "help",   0, false);
-	RunnerAddFunctionPtr(BuiltInVersion,  "ver",    0, false);
-	RunnerAddFunctionPtr(BuiltInEcho,     "echo",   1, false);
-	RunnerAddFunctionPtr(BuiltInGetVer,   "getver", 0, true);
-	RunnerAddFunctionPtr(BuiltInEquals,   "equals", 2, true);
-	RunnerAddFunctionPtr(BuiltInConcat,   "concat", 2, true);
-	RunnerAddFunctionPtr(BuiltInToString, "str",    1, true);
-	RunnerAddFunctionPtr(BuiltInToInt,    "int",    1, true);
-
-	// Arithmetic operations
-	RunnerAddFunctionPtr(BuiltInAdd,      "add", 2, true);
-	RunnerAddFunctionPtr(BuiltInSub,      "sub", 2, true);
-	RunnerAddFunctionPtr(BuiltInMul,      "mul", 2, true);
-	RunnerAddFunctionPtr(BuiltInDiv,      "div", 2, true);
-	RunnerAddFunctionPtr(BuiltInLessThan, "lt",  2, true);
-	RunnerAddFunctionPtr(BuiltInMoreThan, "gt",  2, true);
-	RunnerAddFunctionPtr(BuiltInAnd,      "and", 2, true);
-	RunnerAddFunctionPtr(BuiltInOr,       "or",  2, true);
-}
-
-*/
 
 char GetErrorCategory(int error);
 int  GetErrorNumber(int error);

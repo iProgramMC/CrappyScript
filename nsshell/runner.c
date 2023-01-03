@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #include "shell.h"
 #include "parser.h"
 #include "runner.h"
@@ -185,7 +187,7 @@ Variant* RunStatement(Statement* pStatement)
 	// well, it depends on the type of statement
 	switch (pStatement->type)
 	{
-		case STMT_NULL: return NULL;
+		case STMT_NULL: return VariantCreateNull();
 		case STMT_BLOCK:
 		{
 			// For each statement within the block, run it with zero arguments.
@@ -429,6 +431,11 @@ Variant* RunStatement(Statement* pStatement)
 				args[i] = NULL;
 			}
 
+			if (!returnValue)
+			{
+				return VariantCreateNull();
+			}
+
 			return returnValue;
 		}
 
@@ -439,7 +446,7 @@ Variant* RunStatement(Statement* pStatement)
 		}
 	}
 
-	return NULL;
+	return VariantCreateNull();
 }
 
 // Note: This is added here instead of in builtin.c because we need access to the call stack.

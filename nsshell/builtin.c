@@ -1,9 +1,16 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #include "nanoshell.h"
 #include "builtin.h"
 #include "runner.h"
 #include <errno.h>
 
 NORETURN void RunnerOnError(int error);
+
+Variant* BuiltInNull()
+{
+	return NULL;
+}
 
 Variant* BuiltInHelp()
 {
@@ -63,6 +70,9 @@ Variant* BuiltInEcho(Variant* str)
 		case VAR_STRING:
 			LogMsg("%s", str->m_strValue);
 			break;
+		case VAR_NULL:
+			LogMsg("(null)");
+			break;
 		default:
 			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
 			break;
@@ -80,6 +90,8 @@ Variant* BuiltInEquals(Variant* str1, Variant* str2)
 			return VariantCreateInt(str1->m_intValue == str2->m_intValue);
 		case VAR_STRING:
 			return VariantCreateInt(!strcmp(str1->m_strValue, str2->m_strValue));
+		case VAR_NULL:
+			return VariantCreateInt(1); // all such variants are the same
 		default:
 			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
 	}
@@ -118,6 +130,10 @@ Variant* BuiltInToString(Variant* var)
 			snprintf(buffer, sizeof buffer, "%lld", var->m_intValue);
 			return VariantCreateString(buffer);
 		}
+		case VAR_NULL:
+		{
+			return VariantCreateString("");
+		}
 		default:
 		{
 			RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
@@ -141,6 +157,10 @@ Variant* BuiltInToInt(Variant* var)
 		case VAR_INT:
 		{
 			return VariantDuplicate(var);
+		}
+		case VAR_NULL:
+		{
+			return VariantCreateInt(0);
 		}
 		default:
 		{
@@ -227,6 +247,7 @@ void RunnerAddStandardFunctions()
 	RunnerAddFunctionPtr(BuiltInConcat,   "concat", 2, true);
 	RunnerAddFunctionPtr(BuiltInToString, "str",    1, true);
 	RunnerAddFunctionPtr(BuiltInToInt,    "int",    1, true);
+	RunnerAddFunctionPtr(BuiltInNull,     "null",   0, true);
 
 	// Arithmetic operations
 	RunnerAddFunctionPtr(BuiltInAdd,      "add", 2, true);

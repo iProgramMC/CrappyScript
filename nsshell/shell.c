@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #include "shell.h"
 #include "tokeniser.h"
 #include "parser.h"

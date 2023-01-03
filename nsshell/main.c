@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+// CrappyScript (C) 2023 iProgramInCpp
+
 #ifdef _WIN32
 #include <direct.h>
 #else

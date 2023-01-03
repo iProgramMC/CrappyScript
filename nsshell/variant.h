@@ -1,3 +1,5 @@
+// CrappyScript (C) 2023 iProgramInCpp
+
 #pragma once
 
 #include <assert.h>
@@ -5,6 +7,7 @@
 
 typedef enum
 {
+	VAR_NULL,
 	VAR_INT,
 	VAR_STRING,
 	//...
@@ -22,6 +25,7 @@ typedef struct Variant
 }
 Variant;
 
+Variant* VariantCreateNull();
 Variant* VariantCreateInt(long long value);
 Variant* VariantCreateString(const char* value);
 Variant* VariantDuplicate(Variant* pVar);
