@@ -25,8 +25,7 @@ Building:
 
 Important notes about this language:
 
-* The language only works with strings. Why? Well, this might be used as NanoShell's
-  new command line shell.
+* All integer values are represented as 64-bit signed integers internally.
 
 * To print just a string, use either `echo ("text");` or `"text";`
 
@@ -37,17 +36,17 @@ Important notes about this language:
 * Functions declared inside of another function body will be accessible only as soon as
   the parent function has been called.
 
-* To create a variable initialized to a string, you can use either
+* To create a variable initialized to a string or an int, you can use either
   `let <varname> be <something>;` or `set <varname> to <something>;`. To leave a variable
-  blank you can also say `let <varname>;`.
+  blank you can also say `let <varname>;` -- it will be initialized to 0 (int).
   Note that in both `let` and `set`'s cases you can use equals signs instead of `to` and `be`.
   Note that `var` is a synonym for `let`.
 
-* An `if` or `while` statement checks if the string is blank, NULL (internally) or equal to "0"
-  before jumping into the `else` branch. `equals(strA, strB)` will return "0" if the strings
-  don't match, and "1" if they do.
+* An `if` or `while` statement's condition only accepts integer values. A condition is marked
+  as "false" if its value is equal to zero, and "true" if it's non-zero.
 
-* Arithmetic operations are, er, complicated. I'll probably add them at some point.
+* Arithmetic operations are most likely going to be function calls. I'll probably add them at
+  some point.
 
 * Calls to functions with no arguments can omit the parentheses. So `something;` instead of
   `something();`
@@ -63,7 +62,7 @@ Quirks of this language:
   of somewhat supporting UTF-8 characters as identifier names (well, as long as the standard
   C functions will let me). So yes, you can name your "hello" function `こんにちわ`.
 
-* Global variables take over parameter names.
+* Global variables take priority over parameter names.
 
 This language is VERY incomplete. A lot of features are still TBD, including, but not limited to:
 
@@ -71,12 +70,9 @@ This language is VERY incomplete. A lot of features are still TBD, including, bu
 
 * Function prototypes.
 
-* Very possible, but I'm not sure: Non string variables.
+* String operations such as substring, length etc.
 
-* String operations such as substring, length (would generate a number string, like "5" for
-  "hello", or "10" for "NanoShell!")
-
-* Arithmetic operations on number strings. (So strings that are just numbers, like "1234" or "5")
+* Arithmetic operations on numbers.
 
 * Reading input from the user.
 
