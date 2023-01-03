@@ -12,6 +12,7 @@ NORETURN void ParserOnError(int error)
 Statement* ParseBlockStatement();
 Statement* ParseGenericStatement();
 Statement* ParseStringStatement();
+Statement* ParseNumberStatement();
 
 #define IS(token, type) (token->m_type == type)
 
@@ -100,6 +101,21 @@ Statement* ParserSetupStringStatement()
 	if (!pStmt->m_str_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_str_data->m_str = NULL;
+
+	return pStmt;
+}
+
+Statement* ParserSetupNumberStatement()
+{
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_NUMBER;
+
+	pStmt->m_num_data = MemCAllocate(1, sizeof(StatementNumData));
+	if (!pStmt->m_num_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_num_data->m_value = 0;
 
 	return pStmt;
 }
@@ -201,6 +217,9 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 
 	if (IS(token, TK_STRING))
 		return ParseStringStatement();
+
+	if (IS(token, TK_NUMBER))
+		return ParseNumberStatement();
 
 	if (!IS(token, TK_KEYWORD_START))
 	{
@@ -400,6 +419,20 @@ Statement* ParseStringStatement()
 	return pStmt;
 }
 
+Statement* ParseNumberStatement()
+{
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
+	if (!IS(PeekToken(), TK_NUMBER)) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
+
+	Statement* pStmt = ParserSetupNumberStatement();
+
+	long long value = *((long long*)ConsumeToken()->m_data);
+
+	pStmt->m_num_data->m_value = value;
+
+	return pStmt;
+}
+
 Statement* ParseFunctionStatement()
 {
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_FUNCTION_STATEMENT);
@@ -559,6 +592,8 @@ Statement* ParseGenericStatement()
 		pStmt = ParseWhileStatement();
 	else if (IS(tk, TK_STRING))
 		pStmt = ParseStringStatement();
+	else if (IS(tk, TK_NUMBER))
+		pStmt = ParseNumberStatement();
 	else if (IS(tk, TK_FUNCTION) || IS(tk, TK_FUNCTION_SHORT))
 		pStmt = ParseFunctionStatement();
 	else if (IS(tk, TK_LET) || IS(tk, TK_VAR))
@@ -621,6 +656,7 @@ static const char* const g_ts[] =
 	"STMT_FUNCTION",
 	"STMT_VARIABLE",
 	"STMT_ASSIGNMENT",
+	"STMT_NUMBER",
 };
 
 const char* GetTypeString(eStatementType type)
@@ -710,6 +746,11 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 			}
 			break;
 		}
+		case STMT_NUMBER:
+		{
+			LogMsg("  Value: %lld", pStmt->m_num_data->m_value);
+			break;
+		}
 		case STMT_ASSIGNMENT:
 		{
 			LogMsg("  Destination: %s  Assignee:", pStmt->m_asg_data->m_varName);
@@ -790,6 +831,10 @@ void ParserFreeStatement(Statement* pStatement)
 		{
 			MemFree(pStatement->m_asg_data->m_varName);
 			ParserFreeStatement(pStatement->m_asg_data->m_statement);
+			break;
+		}
+		case STMT_NUMBER:
+		{
 			break;
 		}
 	}

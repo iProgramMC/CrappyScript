@@ -39,6 +39,9 @@
     <ClCompile Include="allocator.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="variant.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanoshell.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="allocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="variant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

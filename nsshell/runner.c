@@ -8,7 +8,7 @@ extern jmp_buf g_errorJumpBuffer;
 typedef struct
 {
 	Function* m_pFunction;
-	char* m_args[C_MAX_ARGS];
+	Variant* m_args[C_MAX_ARGS];
 	int m_nargs;
 }
 CallStackFrame;
@@ -38,7 +38,7 @@ NORETURN void RunnerOnError(int error)
 // This could be optimized. By a lot.
 Function* g_functionsList;
 
-char* RunStatement(Statement* pStatement);
+Variant* RunStatement(Statement* pStatement);
 
 void RunnerFreeFunction(Function * pFunc)
 {
@@ -156,7 +156,7 @@ void RunnerAddFunctionVariable(Statement* statement, const char* fname)
 	}
 	else
 	{
-		pFunc->m_pContents = StrDuplicate("");
+		pFunc->m_pContents = VariantCreateInt(0);
 	}
 }
 
@@ -180,7 +180,7 @@ extern Statement* g_mainBlock;
 
 
 
-char* RunStatement(Statement* pStatement)
+Variant* RunStatement(Statement* pStatement)
 {
 	// well, it depends on the type of statement
 	switch (pStatement->type)
@@ -193,7 +193,7 @@ char* RunStatement(Statement* pStatement)
 
 			for (size_t i = 0; i < pData->m_nstatements; i++)
 			{
-				char* returnValue = RunStatement(pData->m_statements[i]);
+				Variant* returnValue = RunStatement(pData->m_statements[i]);
 
 				// TempleOS style. If this statement was a simple string, just print it.
 				if (pData->m_statements[i]->type == STMT_STRING)
@@ -203,7 +203,9 @@ char* RunStatement(Statement* pStatement)
 
 				// if it returned something, we most likely won't use it. Free the memory.
 				if (returnValue)
-					MemFree(returnValue);
+				{
+					VariantFree(returnValue);
+				}
 			}
 
 			break;
@@ -264,9 +266,13 @@ char* RunStatement(Statement* pStatement)
 
 			break;
 		}
+		case STMT_NUMBER:
+		{
+			return VariantCreateInt(pStatement->m_num_data->m_value);
+		}
 		case STMT_STRING:
 		{
-			return StrDuplicate(pStatement->m_str_data->m_str);
+			return VariantCreateString(pStatement->m_str_data->m_str);
 		}
 		case STMT_COMMAND:
 		{
@@ -316,7 +322,7 @@ char* RunStatement(Statement* pStatement)
 					RunnerOnError(ERROR_SPECIFIED_ARGUMENTS);
 				}
 
-				return StrDuplicate(pFunc->m_pContents);
+				return VariantDuplicate(pFunc->m_pContents);
 			}
 
 			// If the command's argument calls don't match..
@@ -325,7 +331,7 @@ char* RunStatement(Statement* pStatement)
 			if (pData->m_nargs > pFunc->m_nArgs)
 				RunnerOnError(ERROR_TOO_MANY_ARGUMENTS);
 
-			char* args[C_MAX_ARGS] = { 0 };
+			Variant* args[C_MAX_ARGS] = { 0 };
 
 			if (pData->m_nargs >= C_MAX_BUILTIN_ARGS)
 			{
@@ -337,7 +343,7 @@ char* RunStatement(Statement* pStatement)
 				args[i] = RunStatement(pData->m_args[i]);
 			}
 
-			char* returnValue = NULL;
+			Variant* returnValue = NULL;
 
 			switch (pFunc->type)
 			{
@@ -357,7 +363,7 @@ char* RunStatement(Statement* pStatement)
 					// Add a new value to the call stack
 					CallStackFrame* pItem = &g_callStack[g_callStackPointer + 1];
 					pItem->m_pFunction = pFunc;
-					memcpy(pItem->m_args, args, C_MAX_ARGS * sizeof(char*));
+					memcpy(pItem->m_args, args, C_MAX_ARGS * sizeof(Variant*));
 
 					g_callStackPointer++;
 					returnValue = RunStatement(pFunc->m_pStatement);
@@ -376,8 +382,9 @@ char* RunStatement(Statement* pStatement)
 			for (size_t i = 0; i < pData->m_nargs; i++)
 			{
 				if (args[i])
-					MemFree(args[i]);
-
+				{
+					VariantFree(args[i]);
+				}
 				args[i] = NULL;
 			}
 
@@ -411,10 +418,12 @@ void RunnerGo()
 	g_callStackPointer = 0;
 	memset(&g_callStack[g_callStackPointer], 0, sizeof(CallStackFrame));
 
-	char* chr = RunStatement(g_mainBlock);
+	Variant* chr = RunStatement(g_mainBlock);
 
 	// If this happens to return anything, free it
 	if (chr)
-		MemFree(chr);
+	{
+		VariantFree(chr);
+	}
 }
 

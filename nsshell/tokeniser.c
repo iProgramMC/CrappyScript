@@ -112,9 +112,25 @@ void TokenAdd(int type, char* data)
 				MemFree(pToken->m_data);
 				pToken->m_type = i;
 				pToken->m_data = NULL;
-				break;
+				return;
 			}
 		}
+
+		// If this key word is made up purely of numbers, create a number.
+		for (char* pchr = pToken->m_data; *pchr != 0; pchr++)
+		{
+			if (!isdigit(*pchr))
+				return;
+		}
+
+		// This is actually a number
+		long long number = atol(pToken->m_data);
+
+		pToken->m_type = TK_NUMBER;
+		MemFree(pToken->m_data);
+		pToken->m_data = MemAllocate(sizeof(long long));
+		*((long long*)pToken->m_data) = number;
+		return;
 	}
 }
 

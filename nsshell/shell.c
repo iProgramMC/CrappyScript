@@ -45,7 +45,8 @@ const char* g_errorMsgs[] = {
 	"Expected command",
 	"Expected 'if' statement",
 	"Expected 'while' statement",
-	"Expected string statement",
+	"Expected string",
+	"Expected number",
 	"Expected ';' statement",
 	"Expected variable definition",
 	"Expected assignment",
@@ -63,6 +64,8 @@ const char* g_errorMsgs[] = {
 	"Variable is already defined",
 	"Assignee is not a variable",
 	"Call stack overflow",
+	"Invalid parameter type. The correct type is 'string'.",
+	"Invalid parameter type. The correct type is 'int'.",
 };
 
 char GetErrorCategory(int error)

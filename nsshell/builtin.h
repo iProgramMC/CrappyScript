@@ -1,10 +1,11 @@
 #pragma once
 
 #include "shell.h"
+#include "variant.h"
 
-char* BuiltInHelp();
-char* BuiltInVersion();
-char* BuiltInGetVer();
-char* BuiltInEcho(char* str);
-char* BuiltInEquals(char* str1, char* str2);
-char* BuiltInConcat(char* str1, char* str2);
+Variant* BuiltInHelp();
+Variant* BuiltInVersion();
+Variant* BuiltInGetVer();
+Variant* BuiltInEcho(Variant* str);
+Variant* BuiltInEquals(Variant* str1, Variant* str2);
+Variant* BuiltInConcat(Variant* str1, Variant* str2);

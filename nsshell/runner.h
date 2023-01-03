@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parser.h"
+#include "variant.h"
 
 #define C_MAX_ARGS (64)
 #define C_MAX_BUILTIN_ARGS (8)
@@ -17,7 +18,7 @@ eFunctionType;
 // note: This function isn't just "void"
 // note: This returns a malloc'ed pointer. Free it properly.
 // note: All parameters are also malloc'ed pointers.
-typedef char* (*CallableFunPtr) ();
+typedef Variant* (*CallableFunPtr) ();
 
 typedef struct Function Function;
 
@@ -29,14 +30,14 @@ struct Function
 	eFunctionType type;
 	const char* m_name;
 	int m_nArgs;
-	char** m_args;
+	char** m_args; // The names of the arguments.
 	bool m_bReturns;
 
 	union
 	{
 		Statement* m_pStatement;
 		CallableFunPtr m_pFunction;
-		char* m_pContents;
+		Variant* m_pContents;
 	};
 };
 

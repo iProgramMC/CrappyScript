@@ -7,7 +7,8 @@ C_FILES = \
 	parser.c     \
 	runner.c     \
 	shell.c      \
-	tokeniser.c
+	tokeniser.c  \
+	variant.c
 
 O_FILES = $(patsubst %.c,build/%.o,$(C_FILES))
 

@@ -1,44 +1,60 @@
 #include "nanoshell.h"
 #include "builtin.h"
 
-char* BuiltInHelp()
+void RunnerOnError(int error);
+
+Variant* BuiltInHelp()
 {
 	LogMsg("Help was called!");
 	return NULL;
 }
 
-char* BuiltInVersion()
+Variant* BuiltInVersion()
 {
 	LogMsg("NanoShell Shell Version %s", SHELL_VERSION_STRING);
 	return NULL;
 }
 
-char* BuiltInGetVer()
+Variant* BuiltInGetVer()
 {
-	return StrDuplicate(SHELL_VERSION_STRING);
+	return VariantCreateString(SHELL_VERSION_STRING);
 }
 
-char* BuiltInEcho(char * str)
+Variant* BuiltInEcho(Variant* str)
 {
-	LogMsg("%s", str);
+	if (str->m_type == VAR_INT)
+		LogMsg("%lld", str->m_intValue);
+	else if (str->m_type == VAR_STRING)
+		LogMsg("%s", str->m_strValue);
+	else
+		LogMsg("???");
 	return NULL;
 }
 
-char* BuiltInEquals(char* str1, char* str2)
+Variant* BuiltInEquals(Variant* str1, Variant* str2)
 {
-	if (strcmp(str1, str2) == 0)
-		return StrDuplicate("1");
+	if (str1->m_type != VAR_STRING || str2->m_type != VAR_STRING)
+		RunnerOnError(ERROR_EXPECTED_STRING_PARM);
+
+	if (strcmp(str1->m_strValue, str2->m_strValue) == 0)
+		return VariantCreateInt(1);
 	else
-		return StrDuplicate("0");
+		return VariantCreateInt(0);
 }
 
-char* BuiltInConcat(char* str1, char* str2)
+Variant* BuiltInConcat(Variant* str1, Variant* str2)
 {
-	size_t len1 = strlen(str1), len2 = strlen(str2);
+	if (str1->m_type != VAR_STRING || str2->m_type != VAR_STRING)
+		RunnerOnError(ERROR_EXPECTED_STRING_PARM);
+
+	size_t len1 = strlen(str1->m_strValue), len2 = strlen(str2->m_strValue);
 
 	char* cpy = MemAllocate(len1 + len2 + 1);
-	memcpy(cpy, str1, len1);
-	memcpy(cpy+len1, str2, len2+1);
+	memcpy(cpy,        str1->m_strValue, len1);
+	memcpy(cpy + len1, str2->m_strValue, len2 + 1);
 
-	return cpy;
+	Variant* pVar = VariantCreateString(cpy);
+	MemFree(cpy);
+
+	return pVar;
 }
