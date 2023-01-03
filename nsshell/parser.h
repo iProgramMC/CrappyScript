@@ -14,6 +14,7 @@ typedef enum
 	STMT_VARIABLE,
 	STMT_ASSIGNMENT,
 	STMT_NUMBER,
+	STMT_RETURN,
 }
 eStatementType;
 
@@ -80,6 +81,12 @@ typedef struct
 }
 StatementNumData;
 
+typedef struct
+{
+	Statement* m_statement;
+}
+StatementRetData;
+
 typedef struct STATEMENT
 {
 	eStatementType type;
@@ -95,6 +102,7 @@ typedef struct STATEMENT
 		StatementVarData* m_var_data;
 		StatementAsgData* m_asg_data;
 		StatementNumData* m_num_data;
+		StatementRetData* m_ret_data;
 	};
 }
 Statement;

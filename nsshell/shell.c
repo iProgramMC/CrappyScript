@@ -52,6 +52,7 @@ const char* g_errorMsgs[] = {
 	"Expected ';' statement",
 	"Expected variable definition",
 	"Expected assignment",
+	"Expected return",
 	"Expected variable name",
 	"Expected name",
 	"",

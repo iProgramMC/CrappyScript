@@ -1,7 +1,9 @@
 
-function ligma(balls)
+function returndemo(something)
 {
-	echo(balls);
+	echo(something);
+	
+	return concat(something, " Actually not.");
 }
 
-echo(ligma("This is going to crashma"));
+echo(returndemo("Is this going to crash?"));

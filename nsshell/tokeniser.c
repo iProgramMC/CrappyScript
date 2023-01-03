@@ -29,6 +29,7 @@ const char* gKeywordKeys[] =
 	"set",
 	"to",
 	"be",
+	"return",
 };
 
 Token** tokens = NULL;

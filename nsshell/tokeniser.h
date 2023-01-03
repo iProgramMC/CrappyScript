@@ -34,6 +34,7 @@ typedef enum
 	TK_ASSIGN,
 	TK_TO,
 	TK_BE,
+	TK_RETURN,
 
 	TK_KEYWORD_END,
 

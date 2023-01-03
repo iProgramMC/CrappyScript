@@ -15,6 +15,7 @@ Statement* ParseBlockStatement();
 Statement* ParseGenericStatement();
 Statement* ParseStringStatement();
 Statement* ParseNumberStatement();
+Statement* ParseReturnStatement();
 
 #define IS(token, type) (token->m_type == type)
 
@@ -118,6 +119,21 @@ Statement* ParserSetupNumberStatement()
 	if (!pStmt->m_num_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->m_num_data->m_value = 0;
+
+	return pStmt;
+}
+
+Statement* ParserSetupReturnStatement()
+{
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_RETURN;
+
+	pStmt->m_ret_data = MemCAllocate(1, sizeof(StatementRetData));
+	if (!pStmt->m_ret_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_ret_data->m_statement = NULL;
 
 	return pStmt;
 }
@@ -435,6 +451,28 @@ Statement* ParseNumberStatement()
 	return pStmt;
 }
 
+Statement* ParseReturnStatement()
+{
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_RETURN_STATEMENT);
+	if (!IS(PeekToken(), TK_RETURN)) ParserOnError(ERROR_EXPECTED_RETURN_STATEMENT);
+	ConsumeToken();
+
+	Statement* pStmt = ParserSetupReturnStatement();
+	pStmt->m_ret_data->m_statement = ParseGenericStatement();
+	// hack for now: If this is a STMT_COMMAND statement, it already ate the semicolon
+	if (pStmt->m_ret_data->m_statement->type == STMT_COMMAND)
+		return pStmt;
+
+	// Ensure this declaration is finished off with a semicolon
+	Token* tk = PeekToken();
+	if (!IS(tk, TK_SEMICOLON))
+	{
+		ParserOnError(ERROR_EXPECTED_SEMICOLON);
+	}
+
+	return pStmt;
+}
+
 Statement* ParseFunctionStatement()
 {
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_FUNCTION_STATEMENT);
@@ -602,6 +640,8 @@ Statement* ParseGenericStatement()
 		pStmt = ParseLetStatement();
 	else if (IS(tk, TK_ASSIGN))
 		pStmt = ParseAssignmentStatement();
+	else if (IS(tk, TK_RETURN))
+		pStmt = ParseReturnStatement();
 	else
 		pStmt = ParseCommandStatement(false);
 
@@ -659,6 +699,7 @@ static const char* const g_ts[] =
 	"STMT_VARIABLE",
 	"STMT_ASSIGNMENT",
 	"STMT_NUMBER",
+	"STMT_RETURN",
 };
 
 const char* GetTypeString(eStatementType type)
@@ -759,6 +800,12 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 			ParserDumpStatement(pStmt->m_asg_data->m_statement, padding + 4);
 			break;
 		}
+		case STMT_RETURN:
+		{
+			LogMsg("  Returns:");
+			ParserDumpStatement(pStmt->m_ret_data->m_statement, padding + 4);
+			break;
+		}
 		default:
 		{
 			LogMsg("");
@@ -833,6 +880,11 @@ void ParserFreeStatement(Statement* pStatement)
 		{
 			MemFree(pStatement->m_asg_data->m_varName);
 			ParserFreeStatement(pStatement->m_asg_data->m_statement);
+			break;
+		}
+		case STMT_RETURN:
+		{
+			ParserFreeStatement(pStatement->m_ret_data->m_statement);
 			break;
 		}
 		case STMT_NUMBER:

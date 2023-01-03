@@ -176,11 +176,7 @@ Function * RunnerLookUpFunction(const char * name)
 	return NULL;
 }
 
-
 extern Statement* g_mainBlock;
-
-
-
 
 Variant* RunStatement(Statement* pStatement)
 {
@@ -206,11 +202,23 @@ Variant* RunStatement(Statement* pStatement)
 				// if it returned something, we most likely won't use it. Free the memory.
 				if (returnValue)
 				{
+					// However if this is a return statement, return it right away.
+					if (pData->m_statements[i]->type == STMT_RETURN)
+					{
+						return returnValue;
+					}
 					VariantFree(returnValue);
 				}
 			}
 
 			break;
+		}
+		case STMT_RETURN:
+		{
+			// This executes the statement afterwards and passes its return value through.
+			StatementRetData* pData = pStatement->m_ret_data;
+
+			return RunStatement(pData->m_statement);
 		}
 		case STMT_FUNCTION:
 		{
