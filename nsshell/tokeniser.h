@@ -45,7 +45,8 @@ eToken;
 typedef struct Token
 {
 	eToken m_type;
-	char* m_data;
+	char*  m_data;
+	int    m_line;
 }
 Token;
 

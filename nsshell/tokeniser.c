@@ -7,6 +7,8 @@
 extern jmp_buf g_errorJumpBuffer;
 extern FILE* g_file;
 
+int g_lineNum = 0;
+
 //const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
 
 // note: this must match the order in the enum eToken from TK_SYMBOL_START
@@ -37,6 +39,7 @@ size_t ntokens = 0;
 
 NORETURN void TokenOnError(int error)
 {
+	LogMsg("At line %d:", g_lineNum);
 	longjmp(g_errorJumpBuffer, error);
 }
 
@@ -67,7 +70,7 @@ void TokenAppend(char** token, size_t* sz, char chr)
 
 // note: this must take a MemAllocate'ed buffer, or NULL
 
-void TokenAdd(int type, char* data)
+void TokenAdd(int type, char* data, int line)
 {
 	// don't add at all if it's an empty key word
 	if (type == TK_KEYWORD_START && data == NULL)
@@ -85,6 +88,7 @@ void TokenAdd(int type, char* data)
 
 	pToken->m_type = type;
 	pToken->m_data = data;
+	pToken->m_line = line;
 
 	// determine the type
 	if (type == TK_SYMBOL_START)
@@ -153,6 +157,7 @@ void Tokenise()
 {
 	char* currentToken = NULL;
 	size_t currentTokenSize = 0;
+	g_lineNum = 1;
 
 	while (!feof(g_file))
 	{
@@ -177,9 +182,15 @@ void Tokenise()
 		if (IsSpaceSafe(c) || IsControlSafe(c))
 		{
 			// push the current token, if there is one
-			TokenAdd(TK_KEYWORD_START, currentToken);
+			TokenAdd(TK_KEYWORD_START, currentToken, g_lineNum);
 			currentToken = NULL;
 			currentTokenSize = 0;
+
+			if (c == '\n')
+			{
+				g_lineNum++;
+			}
+
 			continue;
 		}
 
@@ -188,7 +199,7 @@ void Tokenise()
 		if (match != NULL)
 		{
 			// push the current token, if there is one
-			TokenAdd(TK_KEYWORD_START, currentToken);
+			TokenAdd(TK_KEYWORD_START, currentToken, g_lineNum);
 			currentToken = NULL;
 			currentTokenSize = 0;
 
@@ -196,7 +207,7 @@ void Tokenise()
 			currentToken = MemAllocate(2);
 			currentToken[0] = c;
 			currentToken[1] = 0;
-			TokenAdd(TK_SYMBOL_START, currentToken);
+			TokenAdd(TK_SYMBOL_START, currentToken, g_lineNum);
 			currentToken = NULL;
 			continue;
 		}
@@ -205,7 +216,7 @@ void Tokenise()
 		if (c == '"')
 		{
 			// push the current token, if there is one
-			TokenAdd(TK_KEYWORD_START, currentToken);
+			TokenAdd(TK_KEYWORD_START, currentToken, g_lineNum);
 			currentToken = NULL;
 			currentTokenSize = 0;
 
@@ -223,7 +234,7 @@ void Tokenise()
 					//well, we're done
 					if (!currentToken)
 						currentToken = StrDuplicate("");
-					TokenAdd(TK_STRING, currentToken);
+					TokenAdd(TK_STRING, currentToken, g_lineNum);
 					currentToken = NULL;
 					currentTokenSize = 0;
 					break;

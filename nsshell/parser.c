@@ -6,16 +6,23 @@
 
 extern jmp_buf g_errorJumpBuffer;
 
+int g_parserLine = 0;
+int ParserUpdateLine(int line)
+{
+	return g_parserLine = line;
+}
+
 NORETURN void ParserOnError(int error)
 {
+	LogMsg("At line %d:", g_parserLine);
 	longjmp(g_errorJumpBuffer, error);
 }
 
-Statement* ParseBlockStatement();
+Statement* ParseBlockStatement  ();
 Statement* ParseGenericStatement();
-Statement* ParseStringStatement();
-Statement* ParseNumberStatement();
-Statement* ParseReturnStatement();
+Statement* ParseStringStatement ();
+Statement* ParseNumberStatement ();
+Statement* ParseReturnStatement ();
 
 #define IS(token, type) (token->m_type == type)
 
@@ -43,12 +50,13 @@ Token* ConsumeToken()
 	return tokens[g_currentToken++];
 }
 
-Statement* ParserSetupBlockStatement()
+Statement* ParserSetupBlockStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 	
 	pStmt->type = STMT_BLOCK;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_blk_data = MemCAllocate(1, sizeof(StatementBlkData));
 	if (!pStmt->m_blk_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -59,12 +67,13 @@ Statement* ParserSetupBlockStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupCommandStatement()
+Statement* ParserSetupCommandStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_COMMAND;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_cmd_data = MemCAllocate(1, sizeof(StatementCmdData));
 	if (!pStmt->m_cmd_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -76,12 +85,13 @@ Statement* ParserSetupCommandStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupIfStatement()
+Statement* ParserSetupIfStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_IF;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_if_data = MemCAllocate(1, sizeof(StatementIfData));
 	if (!pStmt->m_if_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -93,12 +103,13 @@ Statement* ParserSetupIfStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupStringStatement()
+Statement* ParserSetupStringStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_STRING;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_str_data = MemCAllocate(1, sizeof(StatementStrData));
 	if (!pStmt->m_str_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -108,12 +119,13 @@ Statement* ParserSetupStringStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupNumberStatement()
+Statement* ParserSetupNumberStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_NUMBER;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_num_data = MemCAllocate(1, sizeof(StatementNumData));
 	if (!pStmt->m_num_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -123,12 +135,13 @@ Statement* ParserSetupNumberStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupReturnStatement()
+Statement* ParserSetupReturnStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_RETURN;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_ret_data = MemCAllocate(1, sizeof(StatementRetData));
 	if (!pStmt->m_ret_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -138,12 +151,13 @@ Statement* ParserSetupReturnStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupFunctionStatement()
+Statement* ParserSetupFunctionStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_FUNCTION;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_fun_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_fun_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -156,12 +170,13 @@ Statement* ParserSetupFunctionStatement()
 	return pStmt;
 }
 
-Statement* ParserSetupVariableStatement()
+Statement* ParserSetupVariableStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_VARIABLE;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_var_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_var_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -172,12 +187,13 @@ Statement* ParserSetupVariableStatement()
 	return pStmt;
 }
 
-Statement* ParseSetupAssignmentStatement()
+Statement* ParseSetupAssignmentStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_ASSIGNMENT;
+	pStmt->m_firstLine = ParserUpdateLine(line);
 
 	pStmt->m_var_data = MemCAllocate(1, sizeof(StatementFunData));
 	if (!pStmt->m_var_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -244,9 +260,7 @@ Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
 		ParserOnError(ERROR_EXPECTED_KEYWORD);
 	}
 
-	ConsumeToken();
-
-	Statement* pCmdStmt = ParserSetupCommandStatement();
+	Statement* pCmdStmt = ParserSetupCommandStatement(ConsumeToken()->m_line);
 
 	pCmdStmt->m_cmd_data->m_name = StrDuplicate(token->m_data);
 
@@ -337,9 +351,7 @@ Statement* ParseIfStatement()
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_IF_STATEMENT);
 	if (!IS(PeekToken(), TK_IF)) ParserOnError(ERROR_EXPECTED_IF_STATEMENT);
 
-	ConsumeToken();
-
-	Statement* pIfStmt = ParserSetupIfStatement();
+	Statement* pIfStmt = ParserSetupIfStatement(ConsumeToken()->m_line);
 
 	// get the condition
 	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
@@ -373,10 +385,8 @@ Statement* ParseWhileStatement()
 {
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_WHILE_STATEMENT);
 	if (!IS(PeekToken(), TK_WHILE)) ParserOnError(ERROR_EXPECTED_WHILE_STATEMENT);
-
-	ConsumeToken();
-
-	Statement* pIfStmt = ParserSetupIfStatement();
+	
+	Statement* pIfStmt = ParserSetupIfStatement(ConsumeToken()->m_line);
 	pIfStmt->type = STMT_WHILE;
 
 	// get the condition
@@ -412,12 +422,11 @@ Statement* ParseEmptyStatement()
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_EMPTY_STATEMENT);
 	if (!IS(PeekToken(), TK_SEMICOLON)) ParserOnError(ERROR_EXPECTED_SEMICOLON);
 
-	ConsumeToken();
-	
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
 
 	pStmt->type = STMT_NULL;
+	pStmt->m_firstLine = ParserUpdateLine(ConsumeToken()->m_line);
 
 	return pStmt;
 }
@@ -427,7 +436,7 @@ Statement* ParseStringStatement()
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
 	if (!IS(PeekToken(), TK_STRING)) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
 
-	Statement* pStmt = ParserSetupStringStatement();
+	Statement* pStmt = ParserSetupStringStatement(PeekToken()->m_line);
 
 	const char* text = ConsumeToken()->m_data;
 	if (!text) text = "";
@@ -442,7 +451,7 @@ Statement* ParseNumberStatement()
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
 	if (!IS(PeekToken(), TK_NUMBER)) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
 
-	Statement* pStmt = ParserSetupNumberStatement();
+	Statement* pStmt = ParserSetupNumberStatement(PeekToken()->m_line);
 
 	long long value = *((long long*)ConsumeToken()->m_data);
 
@@ -455,9 +464,8 @@ Statement* ParseReturnStatement()
 {
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_RETURN_STATEMENT);
 	if (!IS(PeekToken(), TK_RETURN)) ParserOnError(ERROR_EXPECTED_RETURN_STATEMENT);
-	ConsumeToken();
-
-	Statement* pStmt = ParserSetupReturnStatement();
+	
+	Statement* pStmt = ParserSetupReturnStatement(ConsumeToken()->m_line);
 	pStmt->m_ret_data->m_statement = ParseGenericStatement();
 	// hack for now: If this is a STMT_COMMAND statement, it already ate the semicolon
 	if (pStmt->m_ret_data->m_statement->type == STMT_COMMAND)
@@ -478,7 +486,7 @@ Statement* ParseFunctionStatement()
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_FUNCTION_STATEMENT);
 	if (!IS(PeekToken(), TK_FUNCTION) && !IS(PeekToken(), TK_FUNCTION_SHORT)) ParserOnError(ERROR_EXPECTED_FUNCTION_STATEMENT);
 
-	ConsumeToken(); // consume the 'function' word
+	Token* pFunctionKeyWord = ConsumeToken(); // consume the 'function' word
 
 	Token* token;
 
@@ -486,7 +494,7 @@ Statement* ParseFunctionStatement()
 	if (!token) ParserOnError(ERROR_EXPECTED_FUNCTION_NAME);
 	if (!IS(token, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_FUNCTION_NAME);
 
-	Statement* pFunction = ParserSetupFunctionStatement();
+	Statement* pFunction = ParserSetupFunctionStatement(pFunctionKeyWord->m_line);
 	pFunction->m_fun_data->m_name = StrDuplicate(token->m_data);
 
 	// Consume the name token.
@@ -545,9 +553,7 @@ Statement* ParseLetStatement()
 	tk = PeekToken();
 	if (!IS(tk, TK_KEYWORD_START)) ParserOnError(ERROR_EXPECTED_VARIABLE_NAME);
 
-	ConsumeToken();
-
-	Statement* pVarStmt = ParserSetupVariableStatement();
+	Statement* pVarStmt = ParserSetupVariableStatement(ConsumeToken()->m_line);
 
 	pVarStmt->m_var_data->m_name = StrDuplicate(tk->m_data);
 
@@ -578,11 +584,11 @@ Statement* ParseLetStatement()
 
 Statement* ParseAssignmentStatement()
 {
-	Statement* pStmt = ParseSetupAssignmentStatement();
-
 	Token* tk = PeekToken();
 	if (!tk) ParserOnError(ERROR_EXPECTED_ASSIGN_STATEMENT);
 	if (!IS(tk, TK_ASSIGN)) ParserOnError(ERROR_EXPECTED_ASSIGN_STATEMENT);
+
+	Statement* pStmt = ParseSetupAssignmentStatement(tk->m_line);
 
 	ConsumeToken();
 
@@ -665,9 +671,7 @@ Statement* ParseBlockStatement()
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_BLOCK_STATEMENT);
 	if (!IS(PeekToken(), TK_OPENBLOCK)) ParserOnError(ERROR_EXPECTED_BLOCK_STATEMENT);
 
-	Statement* subBlockStmt = ParserSetupBlockStatement();
-
-	ConsumeToken();
+	Statement* subBlockStmt = ParserSetupBlockStatement(ConsumeToken()->m_line);
 	
 	ParseBlockStatementInside(subBlockStmt);
 	
@@ -901,7 +905,7 @@ void Parse()
 {
 	g_currentToken = 0;
 
-	g_mainBlock = ParserSetupBlockStatement();
+	g_mainBlock = ParserSetupBlockStatement(1);
 
 	ParseBlockStatementInside(g_mainBlock);
 

@@ -15,11 +15,14 @@ typedef struct
 }
 CallStackFrame;
 
+Statement* g_pCurrentStatement;
 static CallStackFrame g_callStack[C_MAX_STACK];
 static int g_callStackPointer;
 
 NORETURN void RunnerOnError(int error)
 {
+	if (g_pCurrentStatement)
+		LogMsg("At line %d:", g_pCurrentStatement->m_firstLine);
 	LogMsg("Runtime Error %c%04d: %s", GetErrorCategory(error), GetErrorNumber(error), GetErrorMessage(error));
 	LogMsg("Call stack: ");
 	for (int i = g_callStackPointer; i >= 0; i--)
@@ -178,7 +181,7 @@ Function * RunnerLookUpFunction(const char * name)
 
 extern Statement* g_mainBlock;
 
-Variant* RunStatement(Statement* pStatement)
+Variant* RunStatementSub(Statement* pStatement)
 {
 	// well, it depends on the type of statement
 	switch (pStatement->type)
@@ -455,6 +458,15 @@ Variant* RunStatement(Statement* pStatement)
 	}
 
 	return VariantCreateNull();
+}
+
+Variant* RunStatement(Statement* pStatement)
+{
+	Statement* pStmtBkp = g_pCurrentStatement;
+	g_pCurrentStatement = pStatement;
+	Variant* pRes = RunStatementSub(pStatement);
+	g_pCurrentStatement = pStmtBkp;
+	return pRes;
 }
 
 // Note: This is added here instead of in builtin.c because we need access to the call stack.

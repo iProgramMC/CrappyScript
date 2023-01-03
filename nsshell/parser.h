@@ -91,6 +91,8 @@ typedef struct STATEMENT
 {
 	eStatementType type;
 
+	int m_firstLine;
+
 	union
 	{
 		void* m_data;
