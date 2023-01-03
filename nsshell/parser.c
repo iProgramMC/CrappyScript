@@ -808,7 +808,7 @@ void ParserFreeStatement(Statement* pStatement)
 			{
 				MemFree(pStatement->m_fun_data->m_args[i]);
 			}
-
+			MemFree(pStatement->m_fun_data->m_args);
 			ParserFreeStatement(pStatement->m_fun_data->m_statement);
 			MemFree(pStatement->m_fun_data->m_name);
 			break;
