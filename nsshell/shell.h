@@ -100,7 +100,7 @@ enum eErrorCode
 };
 
 char GetErrorCategory(int error);
-int  GetErrorNumber(int error);
+int  GetErrorNo(int error);
 const char* GetErrorMessage(int error);
 
 void LoadFile(const char* pfn);

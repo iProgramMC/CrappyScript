@@ -131,7 +131,7 @@ void TokenAdd(int type, char* data, int line)
 		}
 
 		// This is actually a number
-		long long number = atol(pToken->m_data);
+		long long number = atoll(pToken->m_data);
 
 		pToken->m_type = TK_NUMBER;
 		MemFree(pToken->m_data);
@@ -143,14 +143,27 @@ void TokenAdd(int type, char* data, int line)
 
 bool IsSpaceSafe(char c)
 {
-	if (c < -1 || c > 255) return false;
+	if (c < -1) return false;
 	return isspace(c);
 }
 
 bool IsControlSafe(char c)
 {
-	if (c < -1 || c > 255) return false;
+	if (c < -1) return false;
 	return iscntrl(c);
+}
+
+int FileGetChar(FILE* f)
+{
+	#ifndef NANOSHELL
+	return fgetc(f);
+	#else
+	int chr = 0;
+	size_t sz = fread(&chr, 1, 1, f);
+	if (sz <= 0)
+		return -1;
+	return (int)chr;
+	#endif
 }
 
 void Tokenise()
@@ -161,7 +174,7 @@ void Tokenise()
 
 	while (!feof(g_file))
 	{
-		int cint = fgetc(g_file);
+		int cint = FileGetChar(g_file);
 		if (cint == EOF) break; // Er, but feof is false? Just making sure..
 
 		char c = (char)cint;
@@ -171,7 +184,7 @@ void Tokenise()
 		{
 			while (c != EOF)
 			{
-				c = (char)fgetc(g_file);
+				c = (char)FileGetChar(g_file);
 				if (c == '\n')
 					break;
 			}
@@ -223,7 +236,7 @@ void Tokenise()
 			// while we have characters
 			while (!feof(g_file))
 			{
-				int cint = fgetc(g_file);
+				int cint = FileGetChar(g_file);
 				if (cint == EOF) break; // Er, but feof is false? Just making sure..
 
 				char c = (char)cint;
@@ -242,7 +255,7 @@ void Tokenise()
 				if (c == '\\')
 				{
 					// Allow escaping some characters. Read another.
-					int cint2 = fgetc(g_file);
+					int cint2 = FileGetChar(g_file);
 					if (cint2 == EOF)
 						TokenOnError(ERROR_UNTERMINATED_ESC_SEQ);
 

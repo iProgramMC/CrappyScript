@@ -23,7 +23,7 @@ NORETURN void RunnerOnError(int error)
 {
 	if (g_pCurrentStatement)
 		LogMsg("At line %d:", g_pCurrentStatement->m_firstLine);
-	LogMsg("Runtime Error %c%04d: %s", GetErrorCategory(error), GetErrorNumber(error), GetErrorMessage(error));
+	LogMsg("Runtime Error %c%04d: %s", GetErrorCategory(error), GetErrorNo(error), GetErrorMessage(error));
 	LogMsg("Call stack: ");
 	for (int i = g_callStackPointer; i >= 0; i--)
 	{
@@ -380,9 +380,9 @@ Variant* RunStatementSub(Statement* pStatement)
 			}
 
 			// If the command's argument calls don't match..
-			if (pData->m_nargs < pFunc->m_nArgs)
+			if ((int)pData->m_nargs < pFunc->m_nArgs)
 				RunnerOnError(ERROR_TOO_FEW_ARGUMENTS);
-			if (pData->m_nargs > pFunc->m_nArgs)
+			if ((int)pData->m_nargs > pFunc->m_nArgs)
 				RunnerOnError(ERROR_TOO_MANY_ARGUMENTS);
 
 			Variant* args[C_MAX_ARGS] = { 0 };

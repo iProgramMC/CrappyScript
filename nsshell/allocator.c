@@ -143,7 +143,7 @@ void MemFree(void* ptr)
 void MemDebugPrint()
 {
 	DebugLogMsg("Starting MemDebugPrint!");
-	for (int i = 0; i < g_nAllocations; i++)
+	for (int i = 0; i < (int)g_nAllocations; i++)
 	{
 		DebugLogMsg("ALLOCATION: %p (%s:%d)", g_allocations[i].ptr, g_allocations[i].file, g_allocations[i].line);
 	}

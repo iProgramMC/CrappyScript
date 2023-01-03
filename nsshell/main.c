@@ -13,6 +13,12 @@
 #include <errno.h>
 #endif
 
+#ifdef NANOSHELL
+#define MAIN NsMain
+#else
+#define MAIN main
+#endif
+
 #include "nanoshell.h"
 #include "shell.h"
 
@@ -24,7 +30,7 @@
 
 void ShellExecuteFile(const char* pfn, int argc, char** argv);
 
-int main(int argc, char ** argv)
+int MAIN(int argc, char ** argv)
 {
 	if (argc < 2)
 	{

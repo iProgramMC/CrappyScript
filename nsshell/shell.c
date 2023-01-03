@@ -89,7 +89,7 @@ char GetErrorCategory(int error)
 	return 'U';
 }
 
-int GetErrorNumber(int error)
+int GetErrorNo(int error)
 {
 	if (error <= ERROR_NONE || error >= ERROR_END) return error;
 
@@ -120,7 +120,7 @@ void ShellExecuteFile(const char* pfn, int argc, char** argv)
 	int error = setjmp(g_errorJumpBuffer);
 	if (error)
 	{
-		LogMsg("ERROR %c%04d: %s", GetErrorCategory(error), GetErrorNumber(error), GetErrorMessage(error));
+		LogMsg("ERROR %c%04d: %s", GetErrorCategory(error), GetErrorNo(error), GetErrorMessage(error));
 		
 		fclose(f);
 		g_file = NULL;
@@ -133,7 +133,10 @@ void ShellExecuteFile(const char* pfn, int argc, char** argv)
 	RunnerCleanup();
 	ParserTeardown();
 	TokenTeardown();
+	
+	#ifdef _WIN32
 	MemDebugPrint();
+	#endif
 
 	fclose(f);
 	g_file = NULL;

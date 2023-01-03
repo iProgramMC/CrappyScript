@@ -2,6 +2,8 @@
 
 #include "nanoshell.h"
 
+#ifndef NANOSHELL
+
 void LogMsgNoCr(const char* fmt, ...)
 {
 	va_list lst;
@@ -18,3 +20,5 @@ void LogMsg(const char* fmt, ...)
 	puts("");
 	va_end(lst);
 }
+
+#endif

@@ -649,7 +649,7 @@ Statement* ParseGenericStatement()
 	else if (IS(tk, TK_RETURN))
 		pStmt = ParseReturnStatement();
 	else
-		pStmt = ParseCommandStatement(false);
+		pStmt = ParseCommandStatement();
 
 	return pStmt;
 }
@@ -772,7 +772,7 @@ void ParserDumpStatement(Statement* pStmt, int padding)
 		case STMT_FUNCTION:
 		{
 			LogMsgNoCr("  Name: %s Arg:", pStmt->m_fun_data->m_name);
-			for (int i = 0; i < pStmt->m_fun_data->m_nargs; i++)
+			for (size_t i = 0; i < pStmt->m_fun_data->m_nargs; i++)
 				LogMsgNoCr("%s%s", i == 0 ? "" : ",", pStmt->m_fun_data->m_args[i]);
 			LogMsg("");
 

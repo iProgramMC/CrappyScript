@@ -87,7 +87,7 @@ typedef struct
 }
 StatementRetData;
 
-typedef struct STATEMENT
+struct STATEMENT
 {
 	eStatementType type;
 
@@ -106,8 +106,7 @@ typedef struct STATEMENT
 		StatementNumData* m_num_data;
 		StatementRetData* m_ret_data;
 	};
-}
-Statement;
+};
 
 void Parse();
 void ParserTeardown();
