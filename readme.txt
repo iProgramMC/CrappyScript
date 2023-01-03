@@ -14,14 +14,20 @@ an in-fix operator (so `add("2", "5")` instead of `"2" + "5"`).
 
 Building:
 
-  Windows
+* Windows
 
     To build this on windows you may either open the provided Visual Studio project or use
   MinGW and type `make`.
 
-  Linux
+* Linux
 
     To build this on Linux type `make`. Make sure you have `gcc` installed.
+
+* NanoShell
+
+    To build this on NanoShell, let's assume you can build the `List` utility.
+	Copy its folder, change the Makefile to add `-DNANOSHELL` to the CFLAGS, and change the
+file name output to the current folder's name. After that, type `make` and run it on NanoShell.
 
 Important notes about this language:
 
