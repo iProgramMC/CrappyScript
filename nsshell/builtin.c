@@ -7,13 +7,44 @@ NORETURN void RunnerOnError(int error);
 
 Variant* BuiltInHelp()
 {
-	LogMsg("Help was called!");
+	LogMsg("CrappyScript Help");
+	LogMsg("\nBuilt-in functions:");
+	LogMsg("help()      - Shows this list");
+	LogMsg("ver()       - Shows the script version");
+	LogMsg("getver()    - Returns the script version as a string");
+	LogMsg("echo()      - Prints a string or integer and a new line");
+	LogMsg("equals(a,b) - Checks if two objects are equal in value");
+	LogMsg("concat(a,b) - Concatenates two strings and returns a string");
+	LogMsg("str(a)      - Converts any object into its string representation");
+	LogMsg("int(a)      - Converts any object into its integer representation if it can");
+	LogMsg("add(a,b)    - Adds two numbers");
+	LogMsg("sub(a,b)    - Subtracts two numbers");
+	LogMsg("mul(a,b)    - Multiplies two numbers");
+	LogMsg("div(a,b)    - Divides two numbers");
+	LogMsg("and(a,b)    - Performs a binary AND on two numbers");
+	LogMsg("or(a,b)     - Performs a binary OR on two numbers");
+	LogMsg("lt(a,b)     - Returns 1 if A is less than B, 0 otherwise");
+	LogMsg("gt(a,b)     - Returns 1 if A is more than B, 0 otherwise");
+	LogMsg("argc        - Returns the number of arguments passed into the script");
+	LogMsg("args(a)     - Returns the a'th (zero-indexed) argument.");
+	LogMsg("arg ## a    - Returns the a'th (zero-indexed) argument.");
+	LogMsg("\nLanguage constructions:");
+	LogMsg("\n* if <condition> then <statement> [else <statement>]");
+	LogMsg("   The usual 'if' statement. The condition statement must always return an");
+	LogMsg("integer. If the condition statement results in a zero, the 'else' branch is");
+	LogMsg("run. Otherwise, the 'then' branch is run, and the 'else' branch is skipped.");
+	LogMsg("\n* while <condition> do <statement> [finally <statement>]");
+	LogMsg("   The 'while' statement is just like the 'if' statement in terms of its");
+	LogMsg("construction. While <condition> returns a non-zero value, the 'do' branch");
+	LogMsg("is run, but once the condition returns zero, the 'finally' branch will run.");
+	LogMsg("\n* Note that this language is still under construction, so not all features");
+	LogMsg("have been implemented yet.\n");
 	return NULL;
 }
 
 Variant* BuiltInVersion()
 {
-	LogMsg("NanoShell Shell Version %s", SHELL_VERSION_STRING);
+	LogMsg("CrappyScript Version %s", SHELL_VERSION_STRING);
 	return NULL;
 }
 
@@ -146,6 +177,9 @@ Variant* BuiltInDiv(Variant* var1, Variant* var2)
 {
 	if (var1->m_type != VAR_INT || var2->m_type != VAR_INT)
 		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	if (var2->m_intValue == 0)
+		RunnerOnError(ERROR_DIVISION_BY_ZERO);
 
 	return VariantCreateInt(var1->m_intValue / var2->m_intValue);
 }

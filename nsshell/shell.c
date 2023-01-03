@@ -70,6 +70,7 @@ const char* g_errorMsgs[] = {
 	"'if' statement expects 'int' condition",
 	"'while' statement expects 'int' condition",
 	"Cannot convert string value to int",
+	"Array index out of bounds",
 };
 
 char GetErrorCategory(int error)
@@ -101,7 +102,7 @@ const char* GetErrorMessage(int error)
 	return g_errorMsgs[error];
 }
 
-void LoadFile(const char* pfn)
+void ShellExecuteFile(const char* pfn, int argc, char** argv)
 {
 	FILE* f = fopen(pfn, "r");
 	if (!f)
@@ -123,7 +124,7 @@ void LoadFile(const char* pfn)
 
 	Tokenise();
 	Parse();
-	RunnerGo();
+	RunnerGo(argc, argv);
 	RunnerCleanup();
 	ParserTeardown();
 	TokenTeardown();

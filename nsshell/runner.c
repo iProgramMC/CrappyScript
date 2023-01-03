@@ -442,12 +442,53 @@ Variant* RunStatement(Statement* pStatement)
 	return NULL;
 }
 
-void RunnerGo()
+// Note: This is added here instead of in builtin.c because we need access to the call stack.
+Variant* BuiltInArgs(Variant* index)
 {
+	if (index->m_type != VAR_INT)
+		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	if (index->m_intValue < 0 || index->m_intValue >= g_callStack[0].m_nargs - 1)
+		RunnerOnError(ERROR_ARRAY_INDEX_OUT_OF_BOUNDS);
+
+	return VariantDuplicate(g_callStack[0].m_args[1+index->m_intValue]);
+}
+
+void RunnerGo(int argc, char** argv)
+{
+	if (argc >= C_MAX_ARGS - 1)
+	{
+		LogMsg("A maximum of %d arguments may be provided to the main function.", C_MAX_ARGS - 2);
+		return;
+	}
+
 	RunnerAddStandardFunctions();
+
+	// Build a 'main' function.
+	char* argNames[C_MAX_ARGS];
+
+	argNames[0] = StrDuplicate("argc");
+	for (int i = 0; i < argc; i++)
+	{
+		char* argName = MemAllocate(64);
+		snprintf(argName, sizeof argName, "arg%d", i);
+		argNames[i + 1] = argName;
+	}
+
+	RunnerAddFunctionStatement(g_mainBlock, "main", argc+1, argNames, false);
+	RunnerAddFunctionPtr(BuiltInArgs, "args", 1, true);
 	
 	g_callStackPointer = 0;
 	memset(&g_callStack[g_callStackPointer], 0, sizeof(CallStackFrame));
+
+	// Set up the arguments.
+	g_callStack[0].m_nargs = argc + 1;
+	g_callStack[0].m_args[0] = VariantCreateInt(argc);
+	for (int i = 0; i < argc; i++)
+	{
+		g_callStack[0].m_args[i+1] = VariantCreateString(argv[i]);
+	}
+	g_callStack[0].m_pFunction = RunnerLookUpFunction("main");
 
 	Variant* chr = RunStatement(g_mainBlock);
 
@@ -456,5 +497,13 @@ void RunnerGo()
 	{
 		VariantFree(chr);
 	}
+
+	// Free the argument variants
+	for (int i = 0; i < g_callStack[0].m_nargs; i++)
+	{
+		VariantFree(g_callStack[0].m_args[i]);
+		free(argNames[i]);
+	}
+	g_callStack[0].m_nargs = 0;
 }
 

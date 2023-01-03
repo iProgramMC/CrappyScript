@@ -20,23 +20,17 @@
 #define getcwd _getcwd
 #endif
 
-char g_cwd[256];
+void ShellExecuteFile(const char* pfn, int argc, char** argv);
 
-void ShellExecuteBatchFile(const char* pfn)
+int main(int argc, char ** argv)
 {
-	LoadFile(pfn);
-}
-
-int main()
-{
-	// prepare CWD
-	if (!getcwd(g_cwd, sizeof g_cwd))
+	if (argc < 2)
 	{
-		LogMsg("Couldn't getcwd?!? Errno: %s", strerror(errno));
-		return 1;
+		LogMsg("Usage: %s <script file> <arguments>", argv[0]);
+		return 0;
 	}
 
-	ShellExecuteBatchFile("test.nss");
+	ShellExecuteFile(argv[1], argc - 2, argv + 2);
 
 	return 0;
 }
