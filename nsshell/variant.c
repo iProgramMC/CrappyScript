@@ -38,7 +38,11 @@ Variant* VariantDuplicate(Variant* pVar)
 
 void VariantFree(Variant* pVariant)
 {
+	if (!pVariant)
+		return;
+
 	if (pVariant->m_type == VAR_STRING)
 		MemFree(pVariant->m_strValue);
+
 	MemFree(pVariant);
 }

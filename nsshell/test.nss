@@ -1,16 +1,13 @@
-function test(parm)
+
+let someInt be 10;
+
+while someInt do
 {
-	echo(concat(str(parm), " world!"));
+	echo(concat("SomeInt is ",str(someInt)));
+	set someInt to sub(someInt, 1);
+}
+finally
+{
+	echo("Finally.");
 }
 
-function test2(parm)
-{
-	echo(int(parm));
-}
-
-test("42");
-test(42);
-test2(42);
-test2("42");
-test2("0x45");
-test2("089645");

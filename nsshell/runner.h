@@ -43,3 +43,4 @@ struct Function
 
 void RunnerGo();
 void RunnerCleanup();
+void RunnerAddFunctionPtr(CallableFunPtr fp, const char* fname, int nargs, bool returns);

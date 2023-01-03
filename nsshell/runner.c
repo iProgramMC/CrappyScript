@@ -259,10 +259,14 @@ Variant* RunStatement(Statement* pStatement)
 				RunnerOnError(ERROR_ASSIGNEE_IS_NOT_VARIABLE);
 			}
 
-			if (pPreExistingFunc->m_pContents)
-				MemFree(pPreExistingFunc->m_pContents);
+			// Note : The variable may get accessed during the modification. This is why we perform a backup here.
+
+			Variant* pOldContents = pPreExistingFunc->m_pContents;
 
 			pPreExistingFunc->m_pContents = RunStatement(pData->m_statement);
+
+			if (pOldContents)
+				VariantFree(pOldContents);
 
 			break;
 		}
@@ -273,6 +277,43 @@ Variant* RunStatement(Statement* pStatement)
 		case STMT_STRING:
 		{
 			return VariantCreateString(pStatement->m_str_data->m_str);
+		}
+		case STMT_IF:
+		case STMT_WHILE:
+		{
+			bool bIsIf = pStatement->type == STMT_IF;
+			bool bHitOnce = false;
+
+			while (!bHitOnce || !bIsIf)
+			{
+				bHitOnce = true;
+
+				Variant* pVar = RunStatement(pStatement->m_if_data->m_condition);
+				if (pVar->m_type != VAR_INT)
+				{
+					RunnerOnError(bIsIf ? ERROR_IF_EXPECTS_INT : ERROR_WHILE_EXPECTS_INT);
+				}
+
+				long long value = pVar->m_intValue;
+				VariantFree(pVar);
+
+				// If this value is false, break out of the loop.
+				if (value)
+				{
+					Variant* pVar = RunStatement(pStatement->m_if_data->m_true_part);
+					VariantFree(pVar);
+				}
+				else
+				{
+					if (pStatement->m_if_data->m_false_part)
+					{
+						Variant* pVar = RunStatement(pStatement->m_if_data->m_false_part);
+						VariantFree(pVar);
+					}
+					break;
+				}
+			}
+			break;
 		}
 		case STMT_COMMAND:
 		{
@@ -399,18 +440,6 @@ Variant* RunStatement(Statement* pStatement)
 	}
 
 	return NULL;
-}
-
-void RunnerAddStandardFunctions()
-{
-	RunnerAddFunctionPtr(BuiltInHelp,    "help",   0, false);
-	RunnerAddFunctionPtr(BuiltInVersion, "ver" ,   0, false);
-	RunnerAddFunctionPtr(BuiltInEcho,    "echo",   1, false);
-	RunnerAddFunctionPtr(BuiltInGetVer,  "getver", 0, true);
-	RunnerAddFunctionPtr(BuiltInEquals,  "equals", 2, true);
-	RunnerAddFunctionPtr(BuiltInConcat,  "concat", 2, true);
-	RunnerAddFunctionPtr(BuiltInToString,"str",    1, true);
-	RunnerAddFunctionPtr(BuiltInToInt,   "int",    1, true);
 }
 
 void RunnerGo()
