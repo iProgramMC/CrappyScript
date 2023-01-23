@@ -460,6 +460,21 @@ Variant* RunStatementSub(Statement* pStatement)
 	return VariantCreateNull();
 }
 
+void PrepareGlobals(Statement* pStatement)
+{
+	// first, ensure that the main block is a block statement. It better be!
+	if (pStatement->type != STMT_BLOCK) return;
+
+	for (size_t i = 0; i < pStatement->m_blk_data->m_nstatements; i++)
+	{
+		Statement* pStmt = pStatement->m_blk_data->m_statements[i];
+		if (pStmt->type == STMT_FUNCTION)
+		{
+			RunStatement(pStmt);
+		}
+	}
+}
+
 Variant* RunStatement(Statement* pStatement)
 {
 	Statement* pStmtBkp = g_pCurrentStatement;
@@ -516,6 +531,9 @@ void RunnerGo(int argc, char** argv)
 		g_callStack[0].m_args[i+1] = VariantCreateString(argv[i]);
 	}
 	g_callStack[0].m_pFunction = RunnerLookUpFunction("main");
+
+	// prepare global functions.
+	PrepareGlobals(g_mainBlock);
 
 	Variant* chr = RunStatement(g_mainBlock);
 
