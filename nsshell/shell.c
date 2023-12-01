@@ -22,9 +22,11 @@ const char* g_errorMsgs[] = {
 	"Unterminated block statement",
 	"Unterminated command statement",
 	"Unterminated function declaration",
+	"Unterminated expression statement",
 	"Internal error: not a block statement",
 	"Internal error: not a command statement",
 	"Internal error: not a function statement",
+	"Internal error: not an expression statement",
 	"Expected statement",
 	"Expected '('",
 	"Expected ')'",
@@ -55,6 +57,8 @@ const char* g_errorMsgs[] = {
 	"Expected return",
 	"Expected variable name",
 	"Expected name",
+	"Invalid expression",
+	"Unknown operator",
 	"",
 	"Runner could not allocate memory",
 	"Internal error: unknown statement type",
@@ -76,6 +80,7 @@ const char* g_errorMsgs[] = {
 	"Array index out of bounds",
 	"Division by zero",
 	"Substring out of bounds",
+	"Unsupported operator",
 };
 
 char GetErrorCategory(int error)

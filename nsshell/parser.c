@@ -50,6 +50,11 @@ Token* ConsumeToken()
 	return tokens[g_currentToken++];
 }
 
+void UnconsumeToken()
+{
+	g_currentToken--;
+}
+
 Statement* ParserSetupBlockStatement(int line)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
@@ -204,6 +209,24 @@ Statement* ParseSetupAssignmentStatement(int line)
 	return pStmt;
 }
 
+Statement* ParserSetupExpressionStatement(int line, Statement* lhs, Statement* rhs, int separator)
+{
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_EXPRESSION;
+	pStmt->m_firstLine = ParserUpdateLine(line);
+
+	pStmt->m_num_data = MemCAllocate(1, sizeof(StatementExpData));
+	if (!pStmt->m_num_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_exp_data->m_lhs = lhs;
+	pStmt->m_exp_data->m_rhs = rhs;
+	pStmt->m_exp_data->m_separator = separator;
+
+	return pStmt;
+}
+
 void ParserAddStmtToBlockStmt(Statement* pBlockStmt, Statement* pAddedStmt)
 {
 	if (pBlockStmt->type != STMT_BLOCK) ParserOnError(ERROR_INTERNAL_NOT_A_BLOCK_STMT);
@@ -240,104 +263,134 @@ void ParserAddArgToFunStmt(Statement* pFunStmt, char* arg)
 	pFunStmt->m_fun_data->m_args[pFunStmt->m_fun_data->m_nargs++] = arg;
 }
 
-Statement* ParseCommandStatementInside(bool bCanExpectSemicolon)
+eOperatorType TokenTypeToOperatorType(int token)
 {
-	Token* token = PeekToken();
-	if (token == NULL)
+	switch (token)
 	{
-		ParserOnError(ERROR_EXPECTED_STATEMENT);
-		return NULL;
+		case TK_PLUS: return OP_PLUS;
+		case TK_MINUS: return OP_MINUS;
+		case TK_TIMES: return OP_TIMES;
+		case TK_DIVIDE: return OP_DIVIDE;
+		//case TK_: return OP_;
+		default:
+			ParserOnError(ERROR_UNKNOWN_OPERATOR);
+	}
+}
+
+Statement* ParseExpressionStatement();
+
+// Level 2: Constants, function calls, and parenthesized expressions
+Statement* ParseExpressionStatementL2()
+{
+	Token* currToken = PeekToken();
+	if (!currToken)
+		ParserOnError(ERROR_UNTERMINATED_EXPRESSION_STMT);
+
+	if (IS(currToken, TK_OPENPAREN))
+	{
+		ConsumeToken();
+
+		Statement* rv = ParseExpressionStatement();
+		if (!PeekToken())
+			ParserOnError(ERROR_UNTERMINATED_EXPRESSION_STMT);
+
+		if (PeekToken()->m_type != TK_CLOSEPAREN)
+			ParserOnError(ERROR_EXPECTED_CLOSE_PAREN);
+
+		ConsumeToken();
+		return rv;
 	}
 
-	if (IS(token, TK_STRING))
-		return ParseStringStatement();
-
-	if (IS(token, TK_NUMBER))
+	if (IS(currToken, TK_NUMBER))
 		return ParseNumberStatement();
 
-	if (!IS(token, TK_KEYWORD_START))
+	if (IS(currToken, TK_STRING))
+		return ParseStringStatement();
+
+	if (!IS(currToken, TK_KEYWORD_START))
+		ParserOnError(ERROR_INVALID_EXPRESSION);
+
+	Token* name = ConsumeToken();
+	currToken = PeekToken();
+
+	if (IS(currToken, TK_OPENPAREN))
 	{
-		ParserOnError(ERROR_EXPECTED_KEYWORD);
-	}
+		// Parse command statement
+		Statement* pCmdStmt = ParserSetupCommandStatement(name->m_line);
+		pCmdStmt->m_cmd_data->m_name = StrDuplicate(name->m_data);
 
-	Statement* pCmdStmt = ParserSetupCommandStatement(ConsumeToken()->m_line);
+		ConsumeToken();
 
-	pCmdStmt->m_cmd_data->m_name = StrDuplicate(token->m_data);
-
-	token = PeekToken();
-
-	if (!token) ParserOnError(ERROR_EXPECTED_SEMICOLON_OR_ARGUMENTS);
-
-	if (!IS(token, TK_OPENPAREN))
-	{
-		// If we're starting to close up..
-		if (!IS(token, TK_CLOSEPAREN))
+		// Parse argument list
+		while (true)
 		{
-			if (IS(token, TK_COMMA))
+			Token* peekedToken = PeekToken();
+
+			if (IS(peekedToken, TK_CLOSEPAREN))
 			{
-				if (bCanExpectSemicolon)
-					ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
-				else
-					return pCmdStmt;
+				ConsumeToken();
+				break;
 			}
+
+			Statement* pArg = ParseExpressionStatement();
+			ParserAddArgToCmdStmt(pCmdStmt, pArg);
 			
-			if (IS(token, TK_SEMICOLON))
+			peekedToken = PeekToken();
+			if (IS(peekedToken, TK_COMMA))
 			{
-				if (!bCanExpectSemicolon)
-					ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
-				else
-					return pCmdStmt;
+				ConsumeToken();
+				continue;
 			}
+
+			if (!IS(peekedToken, TK_CLOSEPAREN))
+				ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
 		}
 
 		return pCmdStmt;
 	}
 	else
 	{
-		ConsumeToken();
-
-		token = PeekToken();
-
-		if (IS(token, TK_CLOSEPAREN))
-		{
-			ConsumeToken();
-			return pCmdStmt;
-		}
-
-		// Parse the arguments
-		while (true)
-		{
-			token = PeekToken();
-			if (!token) ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
-
-			Statement* pSubArg = ParseCommandStatementInside(false);
-
-			ParserAddArgToCmdStmt(pCmdStmt, pSubArg);
-
-			// check if we have a comma
-			token = PeekToken();
-			if (!token) ParserOnError(ERROR_UNTERMINATED_COMMAND_STMT);
-
-			if (IS(token, TK_COMMA))
-			{
-				ConsumeToken();
-			}
-			else if (IS(token, TK_CLOSEPAREN))
-			{
-				ConsumeToken();
-				break;
-			}
-		}
+		Statement* pVarStmt = ParserSetupVariableStatement(name->m_line);
+		pVarStmt->m_var_data->m_name = StrDuplicate(name->m_data);
+		return pVarStmt;
 	}
+}
 
-	return pCmdStmt;
+// Level 1: * and /
+Statement* ParseExpressionStatementL1()
+{
+	Statement* lhs = ParseExpressionStatementL2();
+	Token* sepToken = PeekToken();
+
+	if (sepToken->m_type != TK_TIMES && sepToken->m_type != TK_DIVIDE)
+		return lhs;
+
+	ConsumeToken();
+	Statement* rhs = ParseExpressionStatementL1();
+
+	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
+}
+
+// Level 0: + and -
+Statement* ParseExpressionStatement()
+{
+	Statement* lhs = ParseExpressionStatementL1();
+	Token* sepToken = PeekToken();
+
+	if (sepToken->m_type != TK_PLUS && sepToken->m_type != TK_MINUS)
+		return lhs;
+
+	ConsumeToken();
+	Statement* rhs = ParseExpressionStatement();
+
+	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
 }
 
 Statement* ParseCommandStatement()
 {
 	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_COMMAND_STATEMENT);
 
-	Statement* pStmt = ParseCommandStatementInside(true);
+	Statement* pStmt = ParseExpressionStatement();
 
 	Token* token = ConsumeToken();
 	if (!token) ParserOnError(ERROR_EXPECTED_SEMICOLON);
@@ -354,7 +407,7 @@ Statement* ParseIfStatement()
 	Statement* pIfStmt = ParserSetupIfStatement(ConsumeToken()->m_line);
 
 	// get the condition
-	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
+	pIfStmt->m_if_data->m_condition = ParseExpressionStatement();
 
 	Token* token;
 
@@ -390,7 +443,7 @@ Statement* ParseWhileStatement()
 	pIfStmt->type = STMT_WHILE;
 
 	// get the condition
-	pIfStmt->m_if_data->m_condition = ParseCommandStatementInside(false);
+	pIfStmt->m_if_data->m_condition = ParseExpressionStatement();
 
 	Token* token;
 
@@ -448,8 +501,8 @@ Statement* ParseStringStatement()
 
 Statement* ParseNumberStatement()
 {
-	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
-	if (!IS(PeekToken(), TK_NUMBER)) ParserOnError(ERROR_EXPECTED_STRING_STATEMENT);
+	if (!PeekToken()) ParserOnError(ERROR_EXPECTED_NUMBER_STATEMENT);
+	if (!IS(PeekToken(), TK_NUMBER)) ParserOnError(ERROR_EXPECTED_NUMBER_STATEMENT);
 
 	Statement* pStmt = ParserSetupNumberStatement(PeekToken()->m_line);
 
@@ -638,8 +691,6 @@ Statement* ParseGenericStatement()
 		pStmt = ParseWhileStatement();
 	else if (IS(tk, TK_STRING))
 		pStmt = ParseStringStatement();
-	else if (IS(tk, TK_NUMBER))
-		pStmt = ParseNumberStatement();
 	else if (IS(tk, TK_FUNCTION) || IS(tk, TK_FUNCTION_SHORT))
 		pStmt = ParseFunctionStatement();
 	else if (IS(tk, TK_LET) || IS(tk, TK_VAR))

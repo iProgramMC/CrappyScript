@@ -328,6 +328,32 @@ Variant* RunStatementSub(Statement* pStatement)
 			}
 			break;
 		}
+		case STMT_EXPRESSION:
+		{
+			// Execute both statements, and run the related function
+			Variant* (*fn)(Variant*, Variant*);
+			
+			StatementExpData* pData = pStatement->m_exp_data;
+
+			switch (pData->m_separator)
+			{
+				case OP_PLUS:   fn = BuiltInAdd; break;
+				case OP_MINUS:  fn = BuiltInSub; break;
+				case OP_TIMES:  fn = BuiltInMul; break;
+				case OP_DIVIDE: fn = BuiltInDiv; break;
+				default: RunnerOnError(ERROR_UNSUPPORTED_OPERATOR);
+			}
+
+			Variant* v1 = RunStatement(pData->m_lhs);
+			Variant* v2 = RunStatement(pData->m_rhs);
+
+			Variant* result = fn(v1, v2);
+
+			VariantFree(v1);
+			VariantFree(v2);
+
+			return result;
+		}
 		case STMT_COMMAND:
 		{
 			StatementCmdData* pData = pStatement->m_cmd_data;

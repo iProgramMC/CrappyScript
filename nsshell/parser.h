@@ -15,8 +15,31 @@ typedef enum
 	STMT_ASSIGNMENT,
 	STMT_NUMBER,
 	STMT_RETURN,
+	STMT_EXPRESSION,
 }
 eStatementType;
+
+typedef enum
+{
+	OP_PLUS,
+	OP_MINUS,
+	OP_TIMES,
+	OP_DIVIDE,
+	OP_EQUALS,
+	OP_LT,
+	OP_GT,
+	OP_LE,
+	OP_GE,
+	OP_AND,
+	OP_OR,
+	OP_NOT,
+	OP_XOR,
+	OP_LSHIFT,
+	OP_RSHIFT,
+}
+eOperatorType;
+
+#define BIT(x) (1 << (x))
 
 typedef struct STATEMENT Statement;
 
@@ -29,6 +52,14 @@ typedef struct
 	Statement* m_false_part;
 }
 StatementIfData;
+
+typedef struct
+{
+	int m_separator;
+	Statement* m_lhs;
+	Statement* m_rhs;
+}
+StatementExpData;
 
 typedef struct
 {
@@ -105,6 +136,7 @@ struct STATEMENT
 		StatementAsgData* m_asg_data;
 		StatementNumData* m_num_data;
 		StatementRetData* m_ret_data;
+		StatementExpData* m_exp_data;
 	};
 };
 

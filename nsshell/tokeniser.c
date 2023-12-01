@@ -12,7 +12,7 @@ int g_lineNum = 0;
 //const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
 
 // note: this must match the order in the enum eToken from TK_SYMBOL_START
-const char* g_singleSymbolTokens = ";{}(),=";
+const char* g_singleSymbolTokens = ";{}(),=+-*/";
 
 // note: this must match the exact order in the enum eToken from TK_KEYWORD_START
 const char* gKeywordKeys[] =
@@ -104,6 +104,10 @@ void TokenAdd(int type, char* data, int line)
 			case ')': pToken->m_type = TK_CLOSEPAREN; break;
 			case ',': pToken->m_type = TK_COMMA;      break;
 			case '=': pToken->m_type = TK_EQUALS;     break;
+			case '+': pToken->m_type = TK_PLUS;       break;
+			case '-': pToken->m_type = TK_MINUS;      break;
+			case '*': pToken->m_type = TK_TIMES;      break;
+			case '/': pToken->m_type = TK_DIVIDE;     break;
 			default: TokenOnError(ERROR_INTERNAL_UNKNOWN_SYMBOL_TOKEN);
 		}
 
