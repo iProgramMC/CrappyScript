@@ -240,6 +240,11 @@ void Tokenise()
 				
 				if (nc == '=' || nc == c)
 				{
+					// push the current token, if there is one
+					TokenAdd(TK_KEYWORD_START, currentToken, g_lineNum);
+					currentToken = NULL;
+					currentTokenSize = 0;
+
 					currentToken = MemAllocate(3);
 					currentToken[0] = c;
 					currentToken[1] = nc;
