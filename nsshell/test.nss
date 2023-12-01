@@ -1,6 +1,5 @@
-echo("hello");
-
-# 64
-echo(
-1<<5
-);
+let a be 4;
+echo
+	(
+		a
+	);

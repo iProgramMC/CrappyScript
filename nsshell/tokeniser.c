@@ -195,10 +195,9 @@ void Tokenise()
 	while (!feof(g_file))
 	{
 		int cint = FileGetChar(g_file);
+		char c = (char)cint;
 	DontRead:
 		if (cint == EOF) break; // Er, but feof is false? Just making sure..
-
-		char c = (char)cint;
 
 		// If this is a hash, we're starting a new comment.
 		if (c == '#')

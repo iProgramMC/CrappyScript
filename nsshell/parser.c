@@ -352,12 +352,12 @@ Statement* ParseExpressionStatementLast()
 	Token* name = ConsumeToken();
 	currToken = PeekToken();
 
+	// Parse command statement
+	Statement* pCmdStmt = ParserSetupCommandStatement(name->m_line);
+	pCmdStmt->m_cmd_data->m_name = StrDuplicate(name->m_data);
+
 	if (IS(currToken, TK_OPENPAREN))
 	{
-		// Parse command statement
-		Statement* pCmdStmt = ParserSetupCommandStatement(name->m_line);
-		pCmdStmt->m_cmd_data->m_name = StrDuplicate(name->m_data);
-
 		ConsumeToken();
 
 		// Parse argument list
@@ -384,15 +384,9 @@ Statement* ParseExpressionStatementLast()
 			if (!IS(peekedToken, TK_CLOSEPAREN))
 				ParserOnError(ERROR_EXPECTED_CLOSE_PAREN_OR_ARGUMENTS);
 		}
+	}
 
-		return pCmdStmt;
-	}
-	else
-	{
-		Statement* pVarStmt = ParserSetupVariableStatement(name->m_line);
-		pVarStmt->m_var_data->m_name = StrDuplicate(name->m_data);
-		return pVarStmt;
-	}
+	return pCmdStmt;
 }
 
 // Level 6: << and >>
@@ -734,11 +728,7 @@ Statement* ParseLetStatement()
 		ConsumeToken();
 
 		// okay, now parse a statement
-		pVarStmt->m_var_data->m_statement = ParseGenericStatement();
-
-		// hack for now: If this is a STMT_COMMAND statement, it already ate the semicolon
-		if (pVarStmt->m_var_data->m_statement->type == STMT_COMMAND)
-			return pVarStmt;
+		pVarStmt->m_var_data->m_statement = ParseExpressionStatement();
 	}
 
 	// Ensure this declaration is finished off with a semicolon
