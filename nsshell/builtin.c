@@ -208,18 +208,30 @@ Variant* BuiltInDiv(Variant* var1, Variant* var2)
 
 Variant* BuiltInLessThan(Variant* var1, Variant* var2)
 {
-	if (var1->m_type != VAR_INT || var2->m_type != VAR_INT)
-		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+	if (var1->m_type != var2->m_type)
+		RunnerOnError(ERROR_EXPECTED_SAME_TYPE_ARGS);
 
-	return VariantCreateInt(var1->m_intValue < var2->m_intValue);
+	if (var1->m_type == VAR_INT)
+		return VariantCreateInt(var1->m_intValue < var2->m_intValue);
+
+	if (var1->m_type == VAR_STRING)
+		return VariantCreateInt(strcmp(var1->m_strValue, var2->m_strValue) < 0);
+
+	RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
 }
 
 Variant* BuiltInMoreThan(Variant* var1, Variant* var2)
 {
-	if (var1->m_type != VAR_INT || var2->m_type != VAR_INT)
-		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+	if (var1->m_type != var2->m_type)
+		RunnerOnError(ERROR_EXPECTED_SAME_TYPE_ARGS);
 
-	return VariantCreateInt(var1->m_intValue > var2->m_intValue);
+	if (var1->m_type == VAR_INT)
+		return VariantCreateInt(var1->m_intValue > var2->m_intValue);
+
+	if (var1->m_type == VAR_STRING)
+		return VariantCreateInt(strcmp(var1->m_strValue, var2->m_strValue) > 0);
+
+	RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
 }
 
 Variant* BuiltInAnd(Variant* var1, Variant* var2)
@@ -268,6 +280,78 @@ Variant* BuiltInLength(Variant* str)
 	return VariantCreateInt(strlen(str->m_strValue));
 }
 
+Variant* BuiltInXor(Variant* var1, Variant* var2)
+{
+	if (var1->m_type != VAR_INT || var2->m_type != VAR_INT)
+		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	return VariantCreateInt(var1->m_intValue ^ var2->m_intValue);
+}
+
+Variant* BuiltInNot(Variant* var)
+{
+	if (var->m_type == VAR_INT)
+		return VariantCreateInt(~var->m_intValue);
+	if (var->m_type == VAR_STRING)
+		return VariantCreateInt(*var->m_strValue == '\0');// if string is empty
+	if (var->m_type == VAR_NULL)
+		return VariantCreateInt(true);
+
+	RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+}
+
+Variant* BuiltInBinNot(Variant* var)
+{
+	if (var->m_type != VAR_INT)
+		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	return VariantCreateInt(~var->m_intValue);
+}
+
+Variant* BuiltInLshift(Variant* var1, Variant* var2)
+{
+	if (var1->m_type != VAR_INT || var2->m_type != VAR_INT)
+		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	return VariantCreateInt(var1->m_intValue << var2->m_intValue);
+}
+
+Variant* BuiltInRshift(Variant* var1, Variant* var2)
+{
+	if (var1->m_type != VAR_INT || var2->m_type != VAR_INT)
+		RunnerOnError(ERROR_EXPECTED_INT_PARM);
+
+	return VariantCreateInt(var1->m_intValue >> var2->m_intValue);
+}
+
+Variant* BuiltInLessEqual(Variant* var1, Variant* var2)
+{
+	if (var1->m_type != var2->m_type)
+		RunnerOnError(ERROR_EXPECTED_SAME_TYPE_ARGS);
+
+	if (var1->m_type == VAR_INT)
+		return VariantCreateInt(var1->m_intValue <= var2->m_intValue);
+
+	if (var1->m_type == VAR_STRING)
+		return VariantCreateInt(strcmp(var1->m_strValue, var2->m_strValue) <= 0);
+
+	RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+}
+
+Variant* BuiltInMoreEqual(Variant* var1, Variant* var2)
+{
+	if (var1->m_type != var2->m_type)
+		RunnerOnError(ERROR_EXPECTED_SAME_TYPE_ARGS);
+
+	if (var1->m_type == VAR_INT)
+		return VariantCreateInt(var1->m_intValue >= var2->m_intValue);
+
+	if (var1->m_type == VAR_STRING)
+		return VariantCreateInt(strcmp(var1->m_strValue, var2->m_strValue) >= 0);
+
+	RunnerOnError(ERROR_UNKNOWN_VARIANT_TYPE);
+}
+
 void RunnerAddStandardFunctions()
 {
 	RunnerAddFunctionPtr(BuiltInHelp,     "help",   0, false);
@@ -283,13 +367,19 @@ void RunnerAddStandardFunctions()
 	RunnerAddFunctionPtr(BuiltInLength,   "length", 1, true);
 
 	// Arithmetic operations
-	RunnerAddFunctionPtr(BuiltInAdd,      "add", 2, true);
-	RunnerAddFunctionPtr(BuiltInSub,      "sub", 2, true);
-	RunnerAddFunctionPtr(BuiltInMul,      "mul", 2, true);
-	RunnerAddFunctionPtr(BuiltInDiv,      "div", 2, true);
-	RunnerAddFunctionPtr(BuiltInLessThan, "lt",  2, true);
-	RunnerAddFunctionPtr(BuiltInMoreThan, "gt",  2, true);
-	RunnerAddFunctionPtr(BuiltInAnd,      "and", 2, true);
-	RunnerAddFunctionPtr(BuiltInOr,       "or",  2, true);
+	RunnerAddFunctionPtr(BuiltInAdd,       "add",  2, true);
+	RunnerAddFunctionPtr(BuiltInSub,       "sub",  2, true);
+	RunnerAddFunctionPtr(BuiltInMul,       "mul",  2, true);
+	RunnerAddFunctionPtr(BuiltInDiv,       "div",  2, true);
+	RunnerAddFunctionPtr(BuiltInLessThan,  "lt",   2, true);
+	RunnerAddFunctionPtr(BuiltInMoreThan,  "gt",   2, true);
+	RunnerAddFunctionPtr(BuiltInLessEqual, "le",   2, true);
+	RunnerAddFunctionPtr(BuiltInMoreEqual, "ge",   2, true);
+	RunnerAddFunctionPtr(BuiltInLshift,    "lsh",  2, true);
+	RunnerAddFunctionPtr(BuiltInRshift,    "rsh",  2, true);
+	RunnerAddFunctionPtr(BuiltInAnd,       "and",  2, true);
+	RunnerAddFunctionPtr(BuiltInXor,       "xor",  2, true);
+	RunnerAddFunctionPtr(BuiltInOr,        "or",   2, true);
+	RunnerAddFunctionPtr(BuiltInNot,       "not",  1, true);
+	RunnerAddFunctionPtr(BuiltInBinNot,    "bnot", 1, true);
 }
-

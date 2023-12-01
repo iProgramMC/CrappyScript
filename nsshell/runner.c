@@ -328,6 +328,24 @@ Variant* RunStatementSub(Statement* pStatement)
 			}
 			break;
 		}
+		case STMT_UNARY_EXP:
+		{
+			// Execute both statements, and run the related function
+			Variant* (*fn)(Variant*);
+			
+			StatementUnaData* pData = pStatement->m_una_data;
+
+			switch (pData->m_operator)
+			{
+				case OP_NOT: fn = BuiltInNot; break;
+				default: RunnerOnError(ERROR_UNSUPPORTED_OPERATOR);
+			}
+
+			Variant* v = RunStatement(pData->m_stmt);
+			Variant* result = fn(v);
+			VariantFree(v);
+			return result;
+		}
 		case STMT_EXPRESSION:
 		{
 			// Execute both statements, and run the related function
@@ -335,12 +353,24 @@ Variant* RunStatementSub(Statement* pStatement)
 			
 			StatementExpData* pData = pStatement->m_exp_data;
 
-			switch (pData->m_separator)
+			switch (pData->m_operator)
 			{
 				case OP_PLUS:   fn = BuiltInAdd; break;
 				case OP_MINUS:  fn = BuiltInSub; break;
 				case OP_TIMES:  fn = BuiltInMul; break;
 				case OP_DIVIDE: fn = BuiltInDiv; break;
+				case OP_AND:    fn = BuiltInAnd; break;
+				case OP_XOR:    fn = BuiltInXor; break;
+				case OP_OR:     fn = BuiltInOr;  break;
+				case OP_NOT:    fn = BuiltInNot; break;
+				case OP_BNOT:   fn = BuiltInBinNot; break;
+				case OP_LSHIFT: fn = BuiltInLshift; break;
+				case OP_RSHIFT: fn = BuiltInRshift; break;
+				case OP_LE:     fn = BuiltInLessEqual; break;
+				case OP_GE:     fn = BuiltInMoreEqual; break;
+				case OP_LT:     fn = BuiltInLessThan; break;
+				case OP_GT:     fn = BuiltInMoreThan; break;
+				case OP_EQUALS: fn = BuiltInEquals; break;
 				default: RunnerOnError(ERROR_UNSUPPORTED_OPERATOR);
 			}
 

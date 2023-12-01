@@ -50,9 +50,12 @@ Token* ConsumeToken()
 	return tokens[g_currentToken++];
 }
 
+// TODO: remove the need for this!
 void UnconsumeToken()
 {
 	g_currentToken--;
+	if (g_currentToken < 0)
+		ParserOnError(ERROR_INTERNAL_UNCONSUME);
 }
 
 Statement* ParserSetupBlockStatement(int line)
@@ -209,7 +212,7 @@ Statement* ParseSetupAssignmentStatement(int line)
 	return pStmt;
 }
 
-Statement* ParserSetupExpressionStatement(int line, Statement* lhs, Statement* rhs, int separator)
+Statement* ParserSetupExpressionStatement(int line, Statement* lhs, Statement* rhs, int operator)
 {
 	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
 	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
@@ -222,7 +225,24 @@ Statement* ParserSetupExpressionStatement(int line, Statement* lhs, Statement* r
 
 	pStmt->m_exp_data->m_lhs = lhs;
 	pStmt->m_exp_data->m_rhs = rhs;
-	pStmt->m_exp_data->m_separator = separator;
+	pStmt->m_exp_data->m_operator = operator;
+
+	return pStmt;
+}
+
+Statement* ParserSetupUnaryExprStatement(int line, Statement* stmt, int operator)
+{
+	Statement* pStmt = MemCAllocate(1, sizeof(Statement));
+	if (!pStmt) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->type = STMT_UNARY_EXP;
+	pStmt->m_firstLine = ParserUpdateLine(line);
+
+	pStmt->m_num_data = MemCAllocate(1, sizeof(StatementExpData));
+	if (!pStmt->m_num_data) ParserOnError(ERROR_P_MEMORY_ALLOC_FAILURE);
+
+	pStmt->m_una_data->m_stmt = stmt;
+	pStmt->m_una_data->m_operator = operator;
 
 	return pStmt;
 }
@@ -271,6 +291,18 @@ eOperatorType TokenTypeToOperatorType(int token)
 		case TK_MINUS: return OP_MINUS;
 		case TK_TIMES: return OP_TIMES;
 		case TK_DIVIDE: return OP_DIVIDE;
+		case TK_LT: return OP_LT;
+		case TK_GT: return OP_GT;
+		case TK_AND: return OP_AND;
+		case TK_XOR: return OP_XOR;
+		case TK_NOT: return OP_NOT;
+		case TK_BNOT: return OP_BNOT;
+		case TK_OR: return OP_OR;
+		case TK_DEQUALS: return OP_DEQUALS;
+		case TK_LE: return OP_LE;
+		case TK_GE: return OP_GE;
+		case TK_LSHIFT: return OP_LSHIFT;
+		case TK_RSHIFT: return OP_RSHIFT;
 		//case TK_: return OP_;
 		default:
 			ParserOnError(ERROR_UNKNOWN_OPERATOR);
@@ -279,12 +311,19 @@ eOperatorType TokenTypeToOperatorType(int token)
 
 Statement* ParseExpressionStatement();
 
-// Level 2: Constants, function calls, and parenthesized expressions
-Statement* ParseExpressionStatementL2()
+// Level 5: Constants, function calls, and parenthesized expressions
+Statement* ParseExpressionStatementLast()
 {
 	Token* currToken = PeekToken();
 	if (!currToken)
 		ParserOnError(ERROR_UNTERMINATED_EXPRESSION_STMT);
+
+	if (IS(currToken, TK_NOT))
+	{
+		// unary operators
+		ConsumeToken();
+		return ParserSetupUnaryExprStatement(currToken->m_line, ParseExpressionStatementLast(), TokenTypeToOperatorType(currToken->m_type));
+	}
 
 	if (IS(currToken, TK_OPENPAREN))
 	{
@@ -356,34 +395,111 @@ Statement* ParseExpressionStatementL2()
 	}
 }
 
-// Level 1: * and /
-Statement* ParseExpressionStatementL1()
+// Level 6: << and >>
+Statement* ParseExpressionStatementShifts()
 {
-	Statement* lhs = ParseExpressionStatementL2();
+	Statement* lhs = ParseExpressionStatementLast();
+	Token* sepToken = PeekToken();
+	int type = sepToken->m_type;
+
+	if (type != TK_LSHIFT &&
+		type != TK_RSHIFT)
+		return lhs;
+
+	ConsumeToken();
+
+	Statement* rhs = ParseExpressionStatementShifts();
+
+	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
+}
+
+// Level 5: =, ==, >, <, >=, <=
+Statement* ParseExpressionStatementComparisons()
+{
+	Statement* lhs = ParseExpressionStatementShifts();
+	Token* sepToken = PeekToken();
+
+	int type = sepToken->m_type;
+
+	if (type != TK_EQUALS &&
+		type != TK_LT &&
+		type != TK_GT &&
+		type != TK_LE &&
+		type != TK_GE)
+		return lhs;
+
+	ConsumeToken();
+
+	Statement* rhs = ParseExpressionStatementComparisons();
+
+	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
+}
+
+// Level 3: Priority binary operators: &, ^
+Statement* ParseExpressionStatementBinary2()
+{
+	Statement* lhs = ParseExpressionStatementComparisons();
+	Token* sepToken = PeekToken();
+	int type = sepToken->m_type;
+
+	if (type != TK_AND &&
+		type != TK_XOR)
+		return lhs;
+
+	ConsumeToken();
+	Statement* rhs = ParseExpressionStatementBinary2();
+
+	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
+}
+
+// Level 2: |
+Statement* ParseExpressionStatementBinary1()
+{
+	Statement* lhs = ParseExpressionStatementBinary2();
+	Token* sepToken = PeekToken();
+
+	if (sepToken->m_type != TK_OR)
+		return lhs;
+
+	ConsumeToken();
+	Statement* rhs = ParseExpressionStatementBinary1();
+
+	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
+}
+
+// Level 1: * and /
+Statement* ParseExpressionStatementMulDiv()
+{
+	Statement* lhs = ParseExpressionStatementBinary1();
 	Token* sepToken = PeekToken();
 
 	if (sepToken->m_type != TK_TIMES && sepToken->m_type != TK_DIVIDE)
 		return lhs;
 
 	ConsumeToken();
-	Statement* rhs = ParseExpressionStatementL1();
+	Statement* rhs = ParseExpressionStatementMulDiv();
 
 	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
 }
 
 // Level 0: + and -
-Statement* ParseExpressionStatement()
+Statement* ParseExpressionStatementAddSub()
 {
-	Statement* lhs = ParseExpressionStatementL1();
+	Statement* lhs = ParseExpressionStatementMulDiv();
 	Token* sepToken = PeekToken();
 
 	if (sepToken->m_type != TK_PLUS && sepToken->m_type != TK_MINUS)
 		return lhs;
 
 	ConsumeToken();
-	Statement* rhs = ParseExpressionStatement();
+	Statement* rhs = ParseExpressionStatementAddSub();
 
 	return ParserSetupExpressionStatement(sepToken->m_line, lhs, rhs, TokenTypeToOperatorType(sepToken->m_type));
+}
+
+Statement* ParseExpressionStatement()
+{
+	return ParseExpressionStatementAddSub();
 }
 
 Statement* ParseCommandStatement()

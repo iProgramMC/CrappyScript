@@ -9,10 +9,10 @@ extern FILE* g_file;
 
 int g_lineNum = 0;
 
-//const char * g_singleSymbolTokens = "!@#$%^&*();:,.+_-={}[]|\\";
+const char* g_doubleSymbolTokens = "<>=";
 
 // note: this must match the order in the enum eToken from TK_SYMBOL_START
-const char* g_singleSymbolTokens = ";{}(),=+-*/";
+const char* g_singleSymbolTokens = ";{}(),=+-*/<>&^|!~";
 
 // note: this must match the exact order in the enum eToken from TK_KEYWORD_START
 const char* gKeywordKeys[] =
@@ -95,7 +95,16 @@ void TokenAdd(int type, char* data, int line)
 	{
 		pToken->m_data = NULL;
 
-		switch (*data)
+		if (data[1])
+		{
+			switch (*data)
+			{
+				case '<': pToken->m_type = data[1] == '=' ? TK_LE : TK_LSHIFT; break;
+				case '>': pToken->m_type = data[1] == '=' ? TK_GE : TK_RSHIFT; break;
+				case '=': pToken->m_type = TK_DEQUALS; break;
+			}
+		}
+		else switch (*data)
 		{
 			case ';': pToken->m_type = TK_SEMICOLON;  break;
 			case '{': pToken->m_type = TK_OPENBLOCK;  break;
@@ -108,6 +117,13 @@ void TokenAdd(int type, char* data, int line)
 			case '-': pToken->m_type = TK_MINUS;      break;
 			case '*': pToken->m_type = TK_TIMES;      break;
 			case '/': pToken->m_type = TK_DIVIDE;     break;
+			case '<': pToken->m_type = TK_LT;         break;
+			case '>': pToken->m_type = TK_GT;         break;
+			case '&': pToken->m_type = TK_AND;        break;
+			case '^': pToken->m_type = TK_XOR;        break;
+			case '|': pToken->m_type = TK_OR;         break;
+			case '!': pToken->m_type = TK_NOT;        break;
+			case '~': pToken->m_type = TK_BNOT;       break;
 			default: TokenOnError(ERROR_INTERNAL_UNKNOWN_SYMBOL_TOKEN);
 		}
 
@@ -179,6 +195,7 @@ void Tokenise()
 	while (!feof(g_file))
 	{
 		int cint = FileGetChar(g_file);
+	DontRead:
 		if (cint == EOF) break; // Er, but feof is false? Just making sure..
 
 		char c = (char)cint;
@@ -215,6 +232,27 @@ void Tokenise()
 		char* match = strchr(g_singleSymbolTokens, c);
 		if (match != NULL)
 		{
+			bool shouldNotRead = false;
+			char nc;
+			if (strchr(g_doubleSymbolTokens, c))
+			{
+				nc = FileGetChar(g_file);
+				
+				if (nc == '=' || nc == c)
+				{
+					currentToken = MemAllocate(3);
+					currentToken[0] = c;
+					currentToken[1] = nc;
+					currentToken[2] = 0;
+					TokenAdd(TK_SYMBOL_START, currentToken, g_lineNum);
+					currentToken = NULL;
+					continue;
+					// that character should be skipped
+				}
+
+				shouldNotRead = true;
+			}
+
 			// push the current token, if there is one
 			TokenAdd(TK_KEYWORD_START, currentToken, g_lineNum);
 			currentToken = NULL;
@@ -226,6 +264,13 @@ void Tokenise()
 			currentToken[1] = 0;
 			TokenAdd(TK_SYMBOL_START, currentToken, g_lineNum);
 			currentToken = NULL;
+
+			if (shouldNotRead)
+			{
+				c = nc;
+				goto DontRead;
+			}
+
 			continue;
 		}
 

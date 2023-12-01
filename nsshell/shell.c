@@ -17,6 +17,7 @@ const char* g_errorMsgs[] = {
 	"Unknown escape sequence",
 	"Internal error: unknown symbol token",
 	"Internal error: unknown keyword token",
+	"Internal error: cannot unconsume token",
 	"",
 	"Parser could not allocate memory",
 	"Unterminated block statement",
@@ -81,6 +82,7 @@ const char* g_errorMsgs[] = {
 	"Division by zero",
 	"Substring out of bounds",
 	"Unsupported operator",
+	"Expected arguments of the same type",
 };
 
 char GetErrorCategory(int error)

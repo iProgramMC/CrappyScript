@@ -16,6 +16,7 @@ typedef enum
 	STMT_NUMBER,
 	STMT_RETURN,
 	STMT_EXPRESSION,
+	STMT_UNARY_EXP,
 }
 eStatementType;
 
@@ -33,9 +34,11 @@ typedef enum
 	OP_AND,
 	OP_OR,
 	OP_NOT,
+	OP_BNOT,
 	OP_XOR,
 	OP_LSHIFT,
 	OP_RSHIFT,
+	OP_DEQUALS,
 }
 eOperatorType;
 
@@ -55,11 +58,19 @@ StatementIfData;
 
 typedef struct
 {
-	int m_separator;
+	int m_operator;
 	Statement* m_lhs;
 	Statement* m_rhs;
 }
 StatementExpData;
+
+// unary expression
+typedef struct
+{
+	int m_operator;
+	Statement* m_stmt;
+}
+StatementUnaData;
 
 typedef struct
 {
@@ -137,6 +148,7 @@ struct STATEMENT
 		StatementNumData* m_num_data;
 		StatementRetData* m_ret_data;
 		StatementExpData* m_exp_data;
+		StatementUnaData* m_una_data;
 	};
 };
 

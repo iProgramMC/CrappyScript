@@ -21,5 +21,12 @@ Variant* BuiltInLessThan(Variant* var1, Variant* var2);
 Variant* BuiltInMoreThan(Variant* var1, Variant* var2);
 Variant* BuiltInAnd(Variant* var1, Variant* var2);
 Variant* BuiltInOr(Variant* var1, Variant* var2);
+Variant* BuiltInXor(Variant* var1, Variant* var2);
+Variant* BuiltInNot(Variant* var);
+Variant* BuiltInBinNot(Variant* var);
+Variant* BuiltInLshift(Variant* var1, Variant* var2);
+Variant* BuiltInRshift(Variant* var1, Variant* var2);
+Variant* BuiltInLessEqual(Variant* var1, Variant* var2);
+Variant* BuiltInMoreEqual(Variant* var1, Variant* var2);
 
 void RunnerAddStandardFunctions();
